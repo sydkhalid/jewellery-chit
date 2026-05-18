@@ -549,6 +549,181 @@ if (installmentsTableElement && window.jQuery?.fn?.DataTable) {
     });
 }
 
+const paymentCustomerControl = document.querySelector('[data-payment-customer]');
+const paymentEnrollmentControl = document.querySelector('[data-payment-enrollment]');
+const paymentInstallmentControl = document.querySelector('[data-payment-installment]');
+const paymentTypeControl = document.querySelector('[data-payment-type]');
+const paymentAmountControl = document.querySelector('[data-payment-amount]');
+const paymentLateFeeControl = document.querySelector('[data-payment-late-fee]');
+const paymentModeControl = document.querySelector('[data-payment-mode]');
+const paymentTransactionControl = document.querySelector('[data-payment-transaction]');
+const paymentTransactionHelp = document.querySelector('[data-payment-transaction-help]');
+const paymentSummary = document.querySelector('[data-payment-summary]');
+
+const parseOptionJson = (option, key) => {
+    if (!option?.dataset?.[key]) {
+        return null;
+    }
+
+    try {
+        return JSON.parse(option.dataset[key]);
+    } catch {
+        return null;
+    }
+};
+
+const selectedPaymentEnrollment = () => parseOptionJson(paymentEnrollmentControl?.selectedOptions?.[0], 'enrollment');
+const selectedPaymentInstallment = () => parseOptionJson(paymentInstallmentControl?.selectedOptions?.[0], 'installment');
+
+const refreshPaymentEnrollmentOptions = () => {
+    if (!paymentCustomerControl || !paymentEnrollmentControl) {
+        return;
+    }
+
+    const customerId = paymentCustomerControl.value;
+
+    paymentEnrollmentControl.querySelectorAll('option[data-customer]').forEach((option) => {
+        option.hidden = !!customerId && option.dataset.customer !== customerId;
+    });
+
+    if (paymentEnrollmentControl.selectedOptions?.[0]?.hidden) {
+        paymentEnrollmentControl.value = '';
+    }
+};
+
+const refreshPaymentInstallmentOptions = () => {
+    if (!paymentEnrollmentControl || !paymentInstallmentControl) {
+        return;
+    }
+
+    const enrollmentId = paymentEnrollmentControl.value;
+
+    paymentInstallmentControl.querySelectorAll('option[data-enrollment]').forEach((option) => {
+        option.hidden = !!enrollmentId && option.dataset.enrollment !== enrollmentId;
+    });
+
+    if (paymentInstallmentControl.selectedOptions?.[0]?.hidden) {
+        paymentInstallmentControl.value = '';
+    }
+};
+
+const refreshPaymentModeRequirement = () => {
+    if (!paymentModeControl || !paymentTransactionControl) {
+        return;
+    }
+
+    const selectedCode = paymentModeControl.selectedOptions?.[0]?.dataset.code || '';
+    const requiresTransaction = selectedCode && selectedCode !== 'cash';
+
+    paymentTransactionControl.required = requiresTransaction;
+
+    if (paymentTransactionHelp) {
+        paymentTransactionHelp.textContent = requiresTransaction ? 'Transaction ID is required for this payment mode.' : 'Optional for cash payments.';
+    }
+};
+
+const refreshPaymentSummary = () => {
+    if (!paymentSummary) {
+        return;
+    }
+
+    const enrollment = selectedPaymentEnrollment();
+    const installment = selectedPaymentInstallment();
+    const amount = Number(paymentAmountControl?.value || 0);
+    const lateFee = Number(paymentLateFeeControl?.value || 0);
+    const total = amount + lateFee;
+
+    if (paymentTypeControl?.value === 'full' && installment && paymentAmountControl && document.activeElement !== paymentAmountControl) {
+        paymentAmountControl.value = Number(installment.balance_amount || 0).toFixed(2);
+    }
+
+    paymentSummary.innerHTML = [
+        enrollment ? `<strong>${enrollment.chit_no}</strong>` : '<strong>No chit selected</strong>',
+        installment ? `Installment #${installment.installment_no}: balance Rs. ${Number(installment.balance_amount || 0).toFixed(2)}` : 'Auto select first pending installment',
+        `Payment amount Rs. ${Number(paymentAmountControl?.value || 0).toFixed(2)}`,
+        `Late fee Rs. ${lateFee.toFixed(2)}`,
+        `Total collection Rs. ${total.toFixed(2)}`,
+    ].join('<br>');
+};
+
+[
+    paymentCustomerControl,
+    paymentEnrollmentControl,
+    paymentInstallmentControl,
+    paymentTypeControl,
+    paymentAmountControl,
+    paymentLateFeeControl,
+    paymentModeControl,
+].forEach((control) => {
+    control?.addEventListener('change', () => {
+        refreshPaymentEnrollmentOptions();
+        refreshPaymentInstallmentOptions();
+        refreshPaymentModeRequirement();
+        refreshPaymentSummary();
+    });
+    control?.addEventListener('input', refreshPaymentSummary);
+});
+
+refreshPaymentEnrollmentOptions();
+refreshPaymentInstallmentOptions();
+refreshPaymentModeRequirement();
+refreshPaymentSummary();
+
+const paymentsTableElement = document.getElementById('payments-table');
+let paymentsTable = null;
+
+if (paymentsTableElement && window.jQuery?.fn?.DataTable) {
+    const formatPaymentMoney = (value) => `Rs. ${Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    paymentsTable = window.jQuery(paymentsTableElement).DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: paymentsTableElement.dataset.source,
+            data: (payload) => {
+                payload.customer_id = document.getElementById('payment-customer-filter')?.value || '';
+                payload.enrollment_id = document.getElementById('payment-enrollment-filter')?.value || '';
+                payload.payment_mode_id = document.getElementById('payment-mode-filter')?.value || '';
+                payload.staff_id = document.getElementById('payment-staff-filter')?.value || '';
+                payload.branch_id = document.getElementById('payment-branch-filter')?.value || '';
+                payload.status = document.getElementById('payment-status-filter')?.value || '';
+                payload.from_date = document.getElementById('payment-from-filter')?.value || '';
+                payload.to_date = document.getElementById('payment-to-filter')?.value || '';
+            },
+        },
+        order: [[3, 'desc']],
+        columns: [
+            { data: 'payment_no', name: 'payment_no' },
+            { data: 'customer_name', name: 'customer.name' },
+            { data: 'chit_no', name: 'enrollment.chit_no' },
+            { data: 'payment_date', name: 'payment_date' },
+            { data: 'payment_mode_name', name: 'paymentMode.name' },
+            { data: 'amount', name: 'amount', className: 'text-end', render: formatPaymentMoney },
+            { data: 'late_fee_amount', name: 'late_fee_amount', className: 'text-end', render: formatPaymentMoney },
+            { data: 'total_amount', name: 'total_amount', className: 'text-end', render: formatPaymentMoney },
+            { data: 'staff_name', name: 'staff.name' },
+            { data: 'status_badge', name: 'status', orderable: true, searchable: false },
+            { data: 'receipt_no', name: 'receipt.receipt_no', orderable: false },
+            { data: 'actions', name: 'actions', orderable: false, searchable: false, className: 'text-end' },
+        ],
+    });
+
+    [
+        'payment-customer-filter',
+        'payment-enrollment-filter',
+        'payment-mode-filter',
+        'payment-staff-filter',
+        'payment-branch-filter',
+        'payment-status-filter',
+        'payment-from-filter',
+        'payment-to-filter',
+    ].forEach((id) => {
+        document.getElementById(id)?.addEventListener('change', () => {
+            paymentsTable?.ajax.reload();
+        });
+    });
+}
+
 document.addEventListener('click', async (event) => {
     const button = event.target.closest('[data-customer-action]');
 
@@ -740,6 +915,85 @@ document.addEventListener('click', async (event) => {
             enrollmentsTable.ajax.reload(null, false);
         } else if (payload.data?.redirect) {
             window.location.href = payload.data.redirect;
+        }
+    } catch (error) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Action needed',
+            text: error.message,
+        });
+    }
+});
+
+document.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-payment-action]');
+
+    if (!button) {
+        return;
+    }
+
+    const action = button.dataset.paymentAction;
+
+    if (action === 'cancel') {
+        const modalElement = document.getElementById('paymentCancelModal');
+        const form = modalElement?.querySelector('form');
+
+        if (modalElement && form) {
+            clearFormErrors(form);
+            form.action = button.dataset.url;
+            Modal.getOrCreateInstance(modalElement).show();
+        }
+
+        return;
+    }
+
+    const result = await Swal.fire({
+        icon: 'warning',
+        title: 'Approve payment edit?',
+        text: 'Approved edits will re-apply payment allocations, receipt, ledger, and cashbook effects.',
+        showCancelButton: true,
+        confirmButtonText: 'Approve',
+        confirmButtonColor: '#198754',
+    });
+
+    if (!result.isConfirmed) {
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('approved', '1');
+
+    try {
+        const response = await fetch(button.dataset.url, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            body: formData,
+        });
+        const payload = await response.json();
+
+        if (!response.ok || !payload.success) {
+            const firstError = payload.data?.errors ? Object.values(payload.data.errors)[0]?.[0] : null;
+
+            throw new Error(firstError || payload.message || 'Unable to complete the request');
+        }
+
+        await Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: payload.message,
+            timer: 1800,
+            showConfirmButton: false,
+        });
+
+        if (paymentsTable) {
+            paymentsTable.ajax.reload(null, false);
+        } else if (payload.data?.redirect) {
+            window.location.href = payload.data.redirect;
+        } else {
+            window.location.reload();
         }
     } catch (error) {
         Swal.fire({

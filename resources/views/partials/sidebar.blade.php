@@ -53,9 +53,10 @@
             'title' => 'Payments',
             'icon' => 'bi-wallet2',
             'permissions' => ['payments.view', 'payments.create', 'payments.edit', 'payments.cancel', 'payments.approve_edit'],
+            'active' => request()->routeIs('payments.*'),
             'children' => [
-                ['title' => 'Payment Entries', 'permission' => 'payments.view'],
-                ['title' => 'Collect Payment', 'permission' => 'payments.create'],
+                ['title' => 'Payment List', 'permission' => 'payments.view', 'route' => route('payments.index'), 'active' => request()->routeIs('payments.index', 'payments.show', 'payments.edit')],
+                ['title' => 'Collect Payment', 'permission' => 'payments.create', 'route' => route('payments.create'), 'active' => request()->routeIs('payments.create')],
             ],
         ],
         [

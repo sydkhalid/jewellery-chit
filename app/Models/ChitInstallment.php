@@ -48,6 +48,11 @@ class ChitInstallment extends Model
         return $this->hasMany(ChitPayment::class, 'installment_id');
     }
 
+    public function paymentAllocations(): HasMany
+    {
+        return $this->hasMany(ChitPaymentAllocation::class, 'installment_id');
+    }
+
     protected function balanceAmount(): Attribute
     {
         return Attribute::get(fn (mixed $value): float => round(

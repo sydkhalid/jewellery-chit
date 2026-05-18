@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\ChitEnrollmentController;
 use App\Http\Controllers\Api\ChitSchemeController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\InstallmentController;
+use App\Http\Controllers\Api\PaymentController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
@@ -32,4 +33,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/installments', [InstallmentController::class, 'index'])->middleware('can:installments.view');
     Route::get('/chit-enrollments/{enrollment}/installments', [InstallmentController::class, 'byEnrollment'])->middleware('can:installments.view');
+
+    Route::get('/payments', [PaymentController::class, 'index'])->middleware('can:payments.view');
+    Route::post('/payments', [PaymentController::class, 'store'])->middleware('can:payments.create');
+    Route::get('/payments/{payment}', [PaymentController::class, 'show'])->middleware('can:payments.view');
 });

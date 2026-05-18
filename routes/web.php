@@ -7,6 +7,7 @@ use App\Http\Controllers\Web\ChitSchemeController;
 use App\Http\Controllers\Web\CustomerController;
 use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\InstallmentController;
+use App\Http\Controllers\Web\PaymentController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/login');
@@ -25,6 +26,34 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
     ->name('dashboard');
 
 Route::middleware(['auth', 'verified', 'role:Admin|Manager|Staff'])->group(function () {
+    Route::get('/payments', [PaymentController::class, 'index'])
+        ->middleware('permission:payments.view')
+        ->name('payments.index');
+    Route::get('/payments/data', [PaymentController::class, 'data'])
+        ->middleware('permission:payments.view')
+        ->name('payments.data');
+    Route::get('/payments/create', [PaymentController::class, 'create'])
+        ->middleware('permission:payments.create')
+        ->name('payments.create');
+    Route::post('/payments', [PaymentController::class, 'store'])
+        ->middleware('permission:payments.create')
+        ->name('payments.store');
+    Route::get('/payments/{payment}', [PaymentController::class, 'show'])
+        ->middleware('permission:payments.view')
+        ->name('payments.show');
+    Route::get('/payments/{payment}/edit', [PaymentController::class, 'edit'])
+        ->middleware('permission:payments.edit')
+        ->name('payments.edit');
+    Route::put('/payments/{payment}', [PaymentController::class, 'update'])
+        ->middleware('permission:payments.edit')
+        ->name('payments.update');
+    Route::post('/payments/{payment}/cancel', [PaymentController::class, 'cancel'])
+        ->middleware('permission:payments.cancel')
+        ->name('payments.cancel');
+    Route::post('/payments/{payment}/approve-edit', [PaymentController::class, 'approveEdit'])
+        ->middleware('permission:payments.approve_edit')
+        ->name('payments.approve-edit');
+
     Route::get('/installments', [InstallmentController::class, 'index'])
         ->middleware('permission:installments.view')
         ->name('installments.index');
