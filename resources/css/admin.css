@@ -42,7 +42,11 @@
     color: #d1d5db;
     display: flex;
     flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
     left: 0;
+    max-height: 100vh;
+    max-height: 100dvh;
     overflow: hidden;
     padding: 18px 14px;
     position: fixed;
@@ -110,6 +114,16 @@
 
 .admin-nav-group {
     flex: 0 0 auto;
+    min-width: 0;
+}
+
+.admin-nav .collapse,
+.admin-nav .collapsing {
+    min-width: 0;
+}
+
+.admin-nav .collapse.show {
+    overflow: visible;
 }
 
 .admin-nav-link {
@@ -161,7 +175,8 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
-    padding: 3px 0 8px 43px;
+    margin: 2px 0 8px;
+    padding: 4px 0 8px 34px;
 }
 
 .admin-subnav-link {
@@ -169,6 +184,9 @@
     color: #aab2c0;
     display: block;
     font-size: 13px;
+    line-height: 1.25;
+    min-height: 32px;
+    overflow-wrap: anywhere;
     padding: 7px 10px;
     text-decoration: none;
 }

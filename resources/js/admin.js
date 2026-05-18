@@ -19,14 +19,37 @@ document.querySelectorAll('[data-sidebar-dismiss]').forEach((button) => {
 
 const sidebarNav = document.getElementById('adminSidebarNav');
 
-sidebarNav?.querySelector('.admin-subnav-link.active, .admin-nav-link.active')?.scrollIntoView({
-    block: 'nearest',
-});
+const keepSidebarItemVisible = (element) => {
+    if (!sidebarNav || !element) {
+        return;
+    }
+
+    window.requestAnimationFrame(() => {
+        const navRect = sidebarNav.getBoundingClientRect();
+        const elementRect = element.getBoundingClientRect();
+        const topOverflow = elementRect.top - navRect.top;
+        const bottomOverflow = elementRect.bottom - navRect.bottom;
+
+        if (bottomOverflow > 0) {
+            sidebarNav.scrollTop += bottomOverflow + 16;
+            return;
+        }
+
+        if (topOverflow < 0) {
+            sidebarNav.scrollTop += topOverflow - 16;
+        }
+    });
+};
+
+const activeSidebarItem = sidebarNav?.querySelector('.admin-subnav-link.active, .admin-nav-link.active');
+
+keepSidebarItemVisible(activeSidebarItem?.closest('.admin-nav-group') || activeSidebarItem);
 
 sidebarNav?.addEventListener('shown.bs.collapse', (event) => {
-    event.target.closest('.admin-nav-group')?.scrollIntoView({
-        block: 'nearest',
-    });
+    const openedGroup = event.target.closest('.admin-nav-group');
+
+    keepSidebarItemVisible(openedGroup);
+    window.setTimeout(() => keepSidebarItemVisible(openedGroup), 260);
 });
 
 const flash = window.adminFlash || {};
