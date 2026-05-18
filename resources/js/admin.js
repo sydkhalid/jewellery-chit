@@ -17,6 +17,18 @@ document.querySelectorAll('[data-sidebar-dismiss]').forEach((button) => {
     });
 });
 
+const sidebarNav = document.getElementById('adminSidebarNav');
+
+sidebarNav?.querySelector('.admin-subnav-link.active, .admin-nav-link.active')?.scrollIntoView({
+    block: 'nearest',
+});
+
+sidebarNav?.addEventListener('shown.bs.collapse', (event) => {
+    event.target.closest('.admin-nav-group')?.scrollIntoView({
+        block: 'nearest',
+    });
+});
+
 const flash = window.adminFlash || {};
 
 if (flash.success) {

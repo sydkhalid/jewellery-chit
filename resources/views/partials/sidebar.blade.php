@@ -219,7 +219,7 @@
         </div>
     </div>
 
-    <nav class="admin-nav">
+    <nav class="admin-nav" id="adminSidebarNav">
         @foreach ($menuGroups as $index => $group)
             @continue(! $canSeeGroup($group))
 
@@ -243,7 +243,7 @@
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </button>
 
-                    <div class="collapse {{ $isActive ? 'show' : '' }}" id="{{ $collapseId }}">
+                    <div class="collapse {{ $isActive ? 'show' : '' }}" id="{{ $collapseId }}" data-bs-parent="#adminSidebarNav">
                         <div class="admin-subnav">
                             @foreach ($visibleChildren as $child)
                                 <a href="{{ $child['route'] ?? '#' }}" class="admin-subnav-link {{ ($child['active'] ?? false) ? 'active' : '' }}">
