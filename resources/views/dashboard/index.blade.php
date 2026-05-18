@@ -12,21 +12,27 @@
             <p class="dashboard-hero-copy mb-0">Track collections, dues, enrollments, staff performance, and billing movement from one place.</p>
             <div class="dashboard-role-line mt-3">
                 Role: <strong>{{ auth()->user()->getRoleNames()->first() ?? 'No role assigned' }}</strong>
+                <span class="mx-2">|</span>
+                Updated: <strong>{{ $dashboardMeta['generated_at'] ?? now()->format('d M Y, h:i A') }}</strong>
             </div>
         </div>
         <div class="dashboard-hero-actions">
-            <button type="button" class="btn btn-light">
-                <i class="bi bi-download me-2"></i>Export
-            </button>
-            <button type="button" class="btn btn-warning">
-                <i class="bi bi-plus-lg me-2"></i>New Entry
-            </button>
+            @can('reports.view')
+                <a href="{{ route('reports.index') }}" class="btn btn-light">
+                    <i class="bi bi-download me-2"></i>Reports
+                </a>
+            @endcan
+            @can('payments.create')
+                <a href="{{ route('payments.create') }}" class="btn btn-warning">
+                    <i class="bi bi-plus-lg me-2"></i>Collect Payment
+                </a>
+            @endcan
         </div>
     </section>
 
     <section class="dashboard-card-grid" aria-label="Dashboard summary">
         @foreach ($summaryCards as $card)
-            <article class="metric-card metric-card-{{ $card['tone'] }}">
+            <a href="{{ $card['url'] ?? '#' }}" class="metric-card metric-card-{{ $card['tone'] }}">
                 <div class="metric-icon">
                     <i class="bi {{ $card['icon'] }}"></i>
                 </div>
@@ -35,7 +41,7 @@
                     <h3 class="metric-value">{{ $card['value'] }}</h3>
                     <p class="metric-trend mb-0">{{ $card['trend'] }}</p>
                 </div>
-            </article>
+            </a>
         @endforeach
     </section>
 
@@ -44,7 +50,7 @@
             <div class="admin-card-header">
                 <div>
                     <h3>Staff-wise collection</h3>
-                    <p>Collection posted by active staff</p>
+                    <p>{{ $dashboardMeta['collection_period'] ?? 'Current month' }}</p>
                 </div>
             </div>
             <div id="staffWiseCollectionChart" class="dashboard-chart" data-chart-status></div>
@@ -54,7 +60,7 @@
             <div class="admin-card-header">
                 <div>
                     <h3>Scheme-wise collection</h3>
-                    <p>Contribution share by scheme</p>
+                    <p>{{ $dashboardMeta['collection_period'] ?? 'Current month' }}</p>
                 </div>
             </div>
             <div id="schemeWiseCollectionChart" class="dashboard-chart" data-chart-status></div>
@@ -64,7 +70,7 @@
             <div class="admin-card-header">
                 <div>
                     <h3>Monthly collection trend</h3>
-                    <p>Six month collection movement</p>
+                    <p>Last six months from successful payments</p>
                 </div>
             </div>
             <div id="monthlyCollectionTrendChart" class="dashboard-chart" data-chart-status></div>
@@ -74,7 +80,7 @@
             <div class="admin-card-header">
                 <div>
                     <h3>Payment mode collection</h3>
-                    <p>Cash, UPI, card, and bank split</p>
+                    <p>{{ $dashboardMeta['collection_period'] ?? 'Current month' }}</p>
                 </div>
             </div>
             <div id="paymentModeCollectionChart" class="dashboard-chart" data-chart-status></div>
@@ -87,23 +93,31 @@
                 <h3>Recent activity</h3>
                 <p>Latest operational movement</p>
             </div>
-            <a href="#" class="btn btn-sm btn-outline-dark">View all</a>
+            @can('activity_logs.view')
+                <a href="{{ route('activity-logs.index') }}" class="btn btn-sm btn-outline-dark">View all</a>
+            @endcan
         </div>
 
         <div class="activity-list">
-            @foreach ($recentActivities as $activity)
-                <div class="activity-item">
-                    <div class="activity-dot"></div>
-                    <div class="activity-body">
-                        <div class="d-flex flex-column flex-md-row justify-content-between gap-1">
-                            <h4>{{ $activity['title'] }}</h4>
-                            <span>{{ $activity['time'] }}</span>
+            @forelse ($recentActivities as $activity)
+                    <div class="activity-item">
+                        <div class="activity-dot"></div>
+                        <div class="activity-body">
+                            <div class="d-flex flex-column flex-md-row justify-content-between gap-1">
+                                <h4>{{ $activity['title'] }}</h4>
+                                <span>{{ $activity['time'] }}</span>
+                            </div>
+                            <p>{{ $activity['description'] }}</p>
+                            <span class="activity-badge">{{ $activity['type'] }}</span>
                         </div>
-                        <p>{{ $activity['description'] }}</p>
-                        <span class="activity-badge">{{ $activity['type'] }}</span>
                     </div>
+            @empty
+                <div class="empty-state empty-state-inline">
+                    <i class="bi bi-activity"></i>
+                    <h3>No recent activity</h3>
+                    <p>New operational actions will appear here automatically.</p>
                 </div>
-            @endforeach
+            @endforelse
         </div>
     </section>
 

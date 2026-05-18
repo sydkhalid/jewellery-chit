@@ -92,10 +92,33 @@ const moneyFormatter = new Intl.NumberFormat('en-IN', {
     maximumFractionDigits: 0,
 });
 
-const renderChart = (selector, options) => {
+const hasChartData = (series) => {
+    if (!Array.isArray(series)) {
+        return false;
+    }
+
+    return series.some((value) => Number(value) > 0);
+};
+
+const showChartEmptyState = (element) => {
+    element.innerHTML = `
+        <div class="empty-state empty-state-inline">
+            <i class="bi bi-bar-chart"></i>
+            <h3>No chart data</h3>
+            <p>Data will appear after records are posted.</p>
+        </div>
+    `;
+};
+
+const renderChart = (selector, options, seriesData = []) => {
     const element = document.querySelector(selector);
 
     if (!element || !chartData || typeof ApexCharts === 'undefined') {
+        return;
+    }
+
+    if (!hasChartData(seriesData)) {
+        showChartEmptyState(element);
         return;
     }
 
@@ -132,7 +155,7 @@ if (chartData) {
                 formatter: (value) => `Rs. ${moneyFormatter.format(value)}`,
             },
         },
-    });
+    }, chartData.staffWiseCollection.series);
 
     renderChart('#schemeWiseCollectionChart', {
         chart: {
@@ -145,7 +168,7 @@ if (chartData) {
         legend: {
             position: 'bottom',
         },
-    });
+    }, chartData.schemeWiseCollection.series);
 
     renderChart('#monthlyCollectionTrendChart', {
         chart: {
@@ -180,7 +203,7 @@ if (chartData) {
                 opacityTo: 0.04,
             },
         },
-    });
+    }, chartData.monthlyCollectionTrend.series);
 
     renderChart('#paymentModeCollectionChart', {
         chart: {
@@ -200,7 +223,7 @@ if (chartData) {
                 },
             },
         },
-    });
+    }, chartData.paymentModeCollection.series);
 }
 
 const resolveInputName = (errorKey) => {
