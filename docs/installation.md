@@ -36,6 +36,16 @@ php artisan storage:link
 npm run build
 ```
 
+## Demo Data
+
+Use this command when you need sample records for every module:
+
+```bash
+php artisan db:seed --class=DemoDataSeeder
+```
+
+The demo seeder is rerunnable and uses stable demo codes such as `CUS-DEMO-001`, `SCH-DEMO-FIXED`, `CHIT-DEMO-001`, `PAY-DEMO-001`, and `INV-DEMO-001`.
+
 ## Backup Settings
 
 The backup package reads these optional environment values:

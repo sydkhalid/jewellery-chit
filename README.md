@@ -39,4 +39,10 @@ npm run build
 php artisan serve
 ```
 
+Load the complete demo/test dataset:
+
+```bash
+php artisan db:seed --class=DemoDataSeeder
+```
+
 See `docs/installation.md`, `docs/api-endpoints.md`, `docs/user-roles-permissions.md`, `docs/testing-checklist.md`, and `docs/deployment.md` for production and QA details.
