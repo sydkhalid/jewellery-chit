@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Web\AuthController as WebAuthController;
 use App\Http\Controllers\Web\BranchController;
+use App\Http\Controllers\Web\CashbookController;
 use App\Http\Controllers\Web\ChitEnrollmentController;
 use App\Http\Controllers\Web\ChitSchemeController;
 use App\Http\Controllers\Web\CustomerController;
@@ -35,6 +36,43 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
     ->name('dashboard');
 
 Route::middleware(['auth', 'verified', 'role:Admin|Manager|Staff'])->group(function () {
+    Route::get('/cashbooks', [CashbookController::class, 'index'])
+        ->middleware('permission:cashbook.view')
+        ->name('cashbooks.index');
+    Route::get('/cashbooks/data', [CashbookController::class, 'data'])
+        ->middleware('permission:cashbook.view')
+        ->name('cashbooks.data');
+    Route::get('/cashbooks/create', [CashbookController::class, 'create'])
+        ->middleware('permission:cashflow.create')
+        ->name('cashbooks.create');
+    Route::post('/cashbooks', [CashbookController::class, 'store'])
+        ->middleware('permission:cashflow.create')
+        ->name('cashbooks.store');
+    Route::get('/cashbooks/opening-balance/create', [CashbookController::class, 'openingBalance'])
+        ->middleware('permission:cashflow.create')
+        ->name('cashbooks.opening-balance.create');
+    Route::post('/cashbooks/opening-balance', [CashbookController::class, 'storeOpeningBalance'])
+        ->middleware('permission:cashflow.create')
+        ->name('cashbooks.opening-balance.store');
+    Route::get('/cashbooks/closing-balance/create', [CashbookController::class, 'closingBalance'])
+        ->middleware('permission:cashflow.create')
+        ->name('cashbooks.closing-balance.create');
+    Route::post('/cashbooks/closing-balance', [CashbookController::class, 'storeClosingBalance'])
+        ->middleware('permission:cashflow.create')
+        ->name('cashbooks.closing-balance.store');
+    Route::get('/cashbooks/daily-summary', [CashbookController::class, 'dailySummary'])
+        ->middleware('permission:cashbook.view')
+        ->name('cashbooks.daily-summary');
+    Route::get('/cashbooks/date-range-summary', [CashbookController::class, 'dateRangeSummary'])
+        ->middleware('permission:cashbook.view')
+        ->name('cashbooks.date-range-summary');
+    Route::get('/cashbooks/payment-mode-summary', [CashbookController::class, 'paymentModeSummary'])
+        ->middleware('permission:cashbook.view')
+        ->name('cashbooks.payment-mode-summary');
+    Route::get('/cashbooks/{cashbook}', [CashbookController::class, 'show'])
+        ->middleware('permission:cashbook.view')
+        ->name('cashbooks.show');
+
     Route::get('/branches', [BranchController::class, 'index'])
         ->middleware('permission:branch.view')
         ->name('branches.index');

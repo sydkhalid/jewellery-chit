@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\ActivityLog;
 use App\Models\AuditLog;
-use App\Models\Cashbook;
 use App\Models\ChitClosure;
 use App\Models\ChitEnrollment;
 use App\Models\ChitInstallment;
@@ -22,7 +21,8 @@ class MaturityClosingService
 {
     public function __construct(
         private readonly MaturityClosingRepository $closings,
-        private readonly LedgerService $ledgerService
+        private readonly LedgerService $ledgerService,
+        private readonly CashflowService $cashflowService
     ) {
     }
 
@@ -169,13 +169,13 @@ class MaturityClosingService
             if ((float) $closure->refund_amount > 0) {
                 $refund = $this->createRefund($closure);
                 $this->ledgerService->createRefundEntry($refund);
-                $this->createRefundCashbookEntry($closure, $refund);
+                $this->cashflowService->createRefundCashEntry($refund);
             }
 
             if ((float) $closure->jewellery_adjustment_amount > 0) {
                 $invoice = $this->createJewelleryAdjustment($closure);
                 $this->ledgerService->createJewelleryAdjustmentEntry($invoice);
-                $this->createJewelleryAdjustmentCashbookEntry($closure, $invoice);
+                $this->cashflowService->createJewelleryAdjustmentEntry($invoice);
             }
 
             $closure->enrollment?->update([
@@ -383,52 +383,6 @@ class MaturityClosingService
             'status' => 'final',
             'created_by' => Auth::id(),
         ]);
-    }
-
-    private function createRefundCashbookEntry(ChitClosure $closure, ChitRefund $refund): Cashbook
-    {
-        $previousBalance = $this->cashbookBalance($closure->enrollment?->branch_id);
-
-        return Cashbook::create([
-            'branch_id' => $closure->enrollment?->branch_id,
-            'cashbook_date' => now()->toDateString(),
-            'transaction_type' => 'refund',
-            'payment_mode_id' => null,
-            'debit' => $refund->amount,
-            'credit' => 0,
-            'balance' => round($previousBalance - (float) $refund->amount, 2),
-            'reference_type' => ChitRefund::class,
-            'reference_id' => $refund->id,
-            'remarks' => "Refund for closing {$closure->closure_no}",
-            'created_by' => Auth::id(),
-        ]);
-    }
-
-    private function createJewelleryAdjustmentCashbookEntry(ChitClosure $closure, JewelleryInvoice $invoice): Cashbook
-    {
-        $previousBalance = $this->cashbookBalance($closure->enrollment?->branch_id);
-
-        return Cashbook::create([
-            'branch_id' => $closure->enrollment?->branch_id,
-            'cashbook_date' => now()->toDateString(),
-            'transaction_type' => 'jewellery_adjustment',
-            'payment_mode_id' => null,
-            'debit' => 0,
-            'credit' => $invoice->chit_adjustment_amount,
-            'balance' => $previousBalance,
-            'reference_type' => JewelleryInvoice::class,
-            'reference_id' => $invoice->id,
-            'remarks' => "Jewellery adjustment for closing {$closure->closure_no}",
-            'created_by' => Auth::id(),
-        ]);
-    }
-
-    private function cashbookBalance(mixed $branchId): float
-    {
-        return (float) Cashbook::query()
-            ->when($branchId, fn ($query): mixed => $query->where('branch_id', $branchId))
-            ->latest('id')
-            ->value('balance');
     }
 
     private function generateClosureNumber(): string

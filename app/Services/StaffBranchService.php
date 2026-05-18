@@ -22,7 +22,8 @@ class StaffBranchService
     public function __construct(
         private readonly BranchRepository $branches,
         private readonly StaffRepository $staff,
-        private readonly StaffCashHandoverRepository $handovers
+        private readonly StaffCashHandoverRepository $handovers,
+        private readonly CashflowService $cashflowService
     ) {
     }
 
@@ -236,6 +237,7 @@ class StaffBranchService
             ]);
 
             $handover->load(['staff', 'branch', 'receiver']);
+            $this->cashflowService->createStaffHandoverEntry($handover);
             $this->logAction($handover, 'update', 'received', 'staff_cash_handovers', $oldValues, $handover->toArray());
 
             return $handover;

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BranchController;
+use App\Http\Controllers\Api\CashbookController;
 use App\Http\Controllers\Api\ChitEnrollmentController;
 use App\Http\Controllers\Api\ChitSchemeController;
 use App\Http\Controllers\Api\CustomerController;
@@ -22,6 +23,12 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
+
+    Route::get('/cashbooks', [CashbookController::class, 'index'])->middleware('can:cashbook.view');
+    Route::get('/cashbooks/daily-summary', [CashbookController::class, 'dailySummary'])->middleware('can:cashbook.view');
+    Route::get('/cashbooks/date-range-summary', [CashbookController::class, 'dateRangeSummary'])->middleware('can:cashbook.view');
+    Route::get('/cashbooks/payment-mode-summary', [CashbookController::class, 'paymentModeSummary'])->middleware('can:cashbook.view');
+    Route::get('/cashbooks/{cashbook}', [CashbookController::class, 'show'])->middleware('can:cashbook.view');
 
     Route::get('/branches', [BranchController::class, 'index'])->middleware('can:branch.view');
     Route::get('/branches/{branch}', [BranchController::class, 'show'])->middleware('can:branch.view');

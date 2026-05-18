@@ -24,7 +24,8 @@ class PaymentService
     public function __construct(
         private readonly PaymentRepository $payments,
         private readonly ReceiptService $receiptService,
-        private readonly LedgerService $ledgerService
+        private readonly LedgerService $ledgerService,
+        private readonly CashflowService $cashflowService
     ) {
     }
 
@@ -191,24 +192,7 @@ class PaymentService
 
     public function createCashbookEntry(ChitPayment $payment): Cashbook
     {
-        $previousBalance = (float) Cashbook::query()
-            ->when($payment->branch_id, fn ($query): mixed => $query->where('branch_id', $payment->branch_id))
-            ->latest('id')
-            ->value('balance');
-
-        return Cashbook::create([
-            'branch_id' => $payment->branch_id,
-            'cashbook_date' => $payment->payment_date,
-            'transaction_type' => $this->cashbookTransactionType($payment),
-            'payment_mode_id' => $payment->payment_mode_id,
-            'debit' => 0,
-            'credit' => $payment->total_amount,
-            'balance' => round($previousBalance + (float) $payment->total_amount, 2),
-            'reference_type' => ChitPayment::class,
-            'reference_id' => $payment->id,
-            'remarks' => "Payment {$payment->payment_no}",
-            'created_by' => Auth::id(),
-        ]);
+        return $this->cashflowService->createPaymentCashEntry($payment);
     }
 
     public function createReceipt(ChitPayment $payment): ChitReceipt
@@ -300,19 +284,13 @@ class PaymentService
 
     public function reverseCashbookEntry(ChitPayment $payment): Cashbook
     {
-        $previousBalance = (float) Cashbook::query()
-            ->when($payment->branch_id, fn ($query): mixed => $query->where('branch_id', $payment->branch_id))
-            ->latest('id')
-            ->value('balance');
-
-        return Cashbook::create([
+        return $this->cashflowService->createCashbookEntry([
             'branch_id' => $payment->branch_id,
             'cashbook_date' => now()->toDateString(),
             'transaction_type' => 'refund',
             'payment_mode_id' => $payment->payment_mode_id,
             'debit' => $payment->total_amount,
             'credit' => 0,
-            'balance' => round($previousBalance - (float) $payment->total_amount, 2),
             'reference_type' => ChitPayment::class,
             'reference_id' => $payment->id,
             'remarks' => "Payment cancellation {$payment->payment_no}",
@@ -591,18 +569,6 @@ class PaymentService
                 'transaction_id' => 'Transaction ID is required for '.$paymentMode->name.' payments.',
             ]);
         }
-    }
-
-    private function cashbookTransactionType(ChitPayment $payment): string
-    {
-        $code = $payment->paymentMode?->code ?? PaymentMode::whereKey($payment->payment_mode_id)->value('code');
-
-        return match ($code) {
-            'cash' => 'cash_received',
-            'upi' => 'upi_received',
-            'card' => 'card_received',
-            default => 'bank_received',
-        };
     }
 
     /**

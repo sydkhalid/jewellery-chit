@@ -1444,6 +1444,129 @@ document.getElementById('staff_id')?.addEventListener('change', (event) => {
 
 refreshHandoverTotal();
 
+const cashbooksTableElement = document.getElementById('cashbooks-table');
+let cashbooksTable = null;
+const cashbookMoney = (value) => `Rs. ${Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+const cashbookFilterPayload = () => ({
+    branch_id: document.getElementById('cashbook-branch-filter')?.value || '',
+    transaction_type: document.getElementById('cashbook-type-filter')?.value || '',
+    payment_mode_id: document.getElementById('cashbook-mode-filter')?.value || '',
+    from_date: document.getElementById('cashbook-from-filter')?.value || '',
+    to_date: document.getElementById('cashbook-to-filter')?.value || '',
+});
+
+const updateCashbookSummaryCards = (summary = {}) => {
+    Object.entries(summary).forEach(([key, value]) => {
+        const element = document.querySelector(`[data-cashbook-summary="${key}"]`);
+
+        if (element && typeof value === 'number') {
+            element.textContent = cashbookMoney(value);
+        }
+    });
+};
+
+const updatePaymentModeSummary = (items = []) => {
+    const container = document.querySelector('[data-payment-mode-summary]');
+
+    if (!container) {
+        return;
+    }
+
+    if (items.length === 0) {
+        container.innerHTML = '<div class="col-12 text-muted">No payment mode entries for this period.</div>';
+
+        return;
+    }
+
+    container.innerHTML = items.map((item) => `
+        <div class="col-md-3">
+            <div class="scheme-info-panel h-100">
+                <div class="text-muted small">${item.payment_mode}</div>
+                <div class="fw-semibold">${cashbookMoney(item.credit_total)}</div>
+                <div class="small text-muted">Net ${cashbookMoney(item.net_total)}</div>
+            </div>
+        </div>
+    `).join('');
+};
+
+const refreshCashbookSummaries = async () => {
+    if (!cashbooksTableElement) {
+        return;
+    }
+
+    const filters = cashbookFilterPayload();
+    const params = new URLSearchParams(filters);
+
+    try {
+        const [rangeResponse, modeResponse] = await Promise.all([
+            fetch(`${cashbooksTableElement.dataset.rangeSummary}?${params.toString()}`, {
+                headers: { Accept: 'application/json' },
+            }),
+            fetch(`${cashbooksTableElement.dataset.modeSummary}?${params.toString()}`, {
+                headers: { Accept: 'application/json' },
+            }),
+        ]);
+        const rangePayload = await rangeResponse.json();
+        const modePayload = await modeResponse.json();
+
+        if (rangePayload.success) {
+            updateCashbookSummaryCards(rangePayload.data?.summary || {});
+        }
+
+        if (modePayload.success) {
+            updatePaymentModeSummary(modePayload.data?.payment_modes || []);
+        }
+    } catch {
+        Swal.fire({
+            icon: 'error',
+            title: 'Action needed',
+            text: 'Unable to refresh cashflow summary.',
+        });
+    }
+};
+
+if (cashbooksTableElement && window.jQuery?.fn?.DataTable) {
+    cashbooksTable = window.jQuery(cashbooksTableElement).DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: cashbooksTableElement.dataset.source,
+            data: (payload) => Object.assign(payload, cashbookFilterPayload()),
+        },
+        order: [[0, 'desc']],
+        columns: [
+            { data: 'cashbook_date', name: 'cashbook_date' },
+            { data: 'branch_name', name: 'branch.name' },
+            { data: 'transaction_type_label', name: 'transaction_type' },
+            { data: 'payment_mode_name', name: 'paymentMode.name' },
+            { data: 'debit', name: 'debit', className: 'text-end', render: cashbookMoney },
+            { data: 'credit', name: 'credit', className: 'text-end', render: cashbookMoney },
+            { data: 'balance', name: 'balance', className: 'text-end', render: cashbookMoney },
+            {
+                data: null,
+                name: 'reference_type',
+                render: (row) => row.reference_type ? `${row.reference_type.split('\\').pop()} #${row.reference_id || ''}` : '-',
+            },
+            { data: 'creator_name', name: 'creator.name' },
+            { data: 'actions', name: 'actions', orderable: false, searchable: false, className: 'text-end' },
+        ],
+    });
+
+    [
+        'cashbook-branch-filter',
+        'cashbook-type-filter',
+        'cashbook-mode-filter',
+        'cashbook-from-filter',
+        'cashbook-to-filter',
+    ].forEach((id) => {
+        document.getElementById(id)?.addEventListener('change', () => {
+            cashbooksTable?.ajax.reload();
+            refreshCashbookSummaries();
+        });
+    });
+}
+
 document.addEventListener('click', async (event) => {
     const button = event.target.closest('[data-customer-action]');
 

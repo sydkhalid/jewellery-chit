@@ -139,9 +139,12 @@
             'title' => 'Cashflow',
             'icon' => 'bi-graph-up-arrow',
             'permissions' => ['cashflow.view', 'cashflow.create', 'cashbook.view'],
+            'active' => request()->routeIs('cashbooks.*'),
             'children' => [
-                ['title' => 'Cashflow Entries', 'permission' => 'cashflow.view'],
-                ['title' => 'Cash Book', 'permission' => 'cashbook.view'],
+                ['title' => 'Cashbook', 'permission' => 'cashbook.view', 'route' => route('cashbooks.index'), 'active' => request()->routeIs('cashbooks.index', 'cashbooks.show')],
+                ['title' => 'Opening Balance', 'permission' => 'cashflow.create', 'route' => route('cashbooks.opening-balance.create'), 'active' => request()->routeIs('cashbooks.opening-balance.*')],
+                ['title' => 'Closing Balance', 'permission' => 'cashflow.create', 'route' => route('cashbooks.closing-balance.create'), 'active' => request()->routeIs('cashbooks.closing-balance.*')],
+                ['title' => 'Cashflow Summary', 'permission' => 'cashbook.view', 'route' => route('cashbooks.index', ['summary' => 'cashflow']), 'active' => request()->routeIs('cashbooks.index') && request('summary') === 'cashflow'],
             ],
         ],
         [

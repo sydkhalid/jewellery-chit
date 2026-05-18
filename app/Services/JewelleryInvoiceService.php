@@ -21,7 +21,8 @@ class JewelleryInvoiceService
     public function __construct(
         private readonly JewelleryInvoiceRepository $invoices,
         private readonly LedgerService $ledgerService,
-        private readonly GoldRateService $goldRateService
+        private readonly GoldRateService $goldRateService,
+        private readonly CashflowService $cashflowService
     ) {
     }
 
@@ -297,27 +298,7 @@ class JewelleryInvoiceService
 
     public function createCashbookEntry(JewelleryInvoice $invoice, bool $reverse = false): ?Cashbook
     {
-        if (! $invoice->enrollment_id || (float) $invoice->chit_adjustment_amount <= 0) {
-            return null;
-        }
-
-        $branchId = $invoice->enrollment?->branch_id;
-        $previousBalance = $this->cashbookBalance($branchId);
-        $amount = (float) $invoice->chit_adjustment_amount;
-
-        return Cashbook::create([
-            'branch_id' => $branchId,
-            'cashbook_date' => now()->toDateString(),
-            'transaction_type' => 'jewellery_adjustment',
-            'payment_mode_id' => null,
-            'debit' => $reverse ? $amount : 0,
-            'credit' => $reverse ? 0 : $amount,
-            'balance' => $previousBalance,
-            'reference_type' => JewelleryInvoice::class,
-            'reference_id' => $invoice->id,
-            'remarks' => ($reverse ? 'Reversal for ' : 'Adjustment for ').$invoice->invoice_no,
-            'created_by' => Auth::id(),
-        ]);
+        return $this->cashflowService->createJewelleryAdjustmentEntry($invoice, $reverse);
     }
 
     /**
@@ -464,14 +445,6 @@ class JewelleryInvoiceService
                 'total_amount' => $this->calculateItemTotal($item),
             ]);
         }
-    }
-
-    private function cashbookBalance(mixed $branchId): float
-    {
-        return (float) Cashbook::query()
-            ->when($branchId, fn ($query): mixed => $query->where('branch_id', $branchId))
-            ->latest('id')
-            ->value('balance');
     }
 
     private function assertApprovedBillingRate(float $goldRate): void
