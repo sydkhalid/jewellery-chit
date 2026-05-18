@@ -96,10 +96,10 @@
             'title' => 'Maturity Closing',
             'icon' => 'bi-award',
             'permissions' => ['maturity.view', 'maturity.create', 'maturity.approve', 'maturity.cancel'],
+            'active' => request()->routeIs('maturity-closings.*'),
             'children' => [
-                ['title' => 'Matured Chits', 'permission' => 'maturity.view'],
-                ['title' => 'Create Closing', 'permission' => 'maturity.create'],
-                ['title' => 'Approval Queue', 'permission' => 'maturity.approve'],
+                ['title' => 'Closing List', 'permission' => 'maturity.view', 'route' => route('maturity-closings.index'), 'active' => request()->routeIs('maturity-closings.index', 'maturity-closings.show')],
+                ['title' => 'New Closing', 'permission' => 'maturity.create', 'route' => route('maturity-closings.create'), 'active' => request()->routeIs('maturity-closings.create')],
             ],
         ],
         [

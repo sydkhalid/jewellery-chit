@@ -28,6 +28,11 @@ class ChitClosure extends Model
         'status',
         'approved_by',
         'approved_at',
+        'completed_by',
+        'completed_at',
+        'cancelled_by',
+        'cancelled_at',
+        'cancellation_reason',
         'created_by',
     ];
 
@@ -41,6 +46,8 @@ class ChitClosure extends Model
             'refund_amount' => 'decimal:2',
             'jewellery_adjustment_amount' => 'decimal:2',
             'approved_at' => 'datetime',
+            'completed_at' => 'datetime',
+            'cancelled_at' => 'datetime',
         ];
     }
 
@@ -62,5 +69,15 @@ class ChitClosure extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function completer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'completed_by');
+    }
+
+    public function canceller(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cancelled_by');
     }
 }

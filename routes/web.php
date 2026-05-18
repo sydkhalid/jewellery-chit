@@ -8,6 +8,7 @@ use App\Http\Controllers\Web\CustomerController;
 use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\InstallmentController;
 use App\Http\Controllers\Web\LedgerController;
+use App\Http\Controllers\Web\MaturityClosingController;
 use App\Http\Controllers\Web\PaymentController;
 use App\Http\Controllers\Web\PendingDueController;
 use App\Http\Controllers\Web\ReceiptController;
@@ -29,6 +30,31 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
     ->name('dashboard');
 
 Route::middleware(['auth', 'verified', 'role:Admin|Manager|Staff'])->group(function () {
+    Route::get('/maturity-closings', [MaturityClosingController::class, 'index'])
+        ->middleware('permission:maturity.view')
+        ->name('maturity-closings.index');
+    Route::get('/maturity-closings/data', [MaturityClosingController::class, 'data'])
+        ->middleware('permission:maturity.view')
+        ->name('maturity-closings.data');
+    Route::get('/maturity-closings/create', [MaturityClosingController::class, 'create'])
+        ->middleware('permission:maturity.create')
+        ->name('maturity-closings.create');
+    Route::post('/maturity-closings', [MaturityClosingController::class, 'store'])
+        ->middleware('permission:maturity.create')
+        ->name('maturity-closings.store');
+    Route::get('/maturity-closings/{closure}', [MaturityClosingController::class, 'show'])
+        ->middleware('permission:maturity.view')
+        ->name('maturity-closings.show');
+    Route::post('/maturity-closings/{closure}/approve', [MaturityClosingController::class, 'approve'])
+        ->middleware('permission:maturity.approve')
+        ->name('maturity-closings.approve');
+    Route::post('/maturity-closings/{closure}/complete', [MaturityClosingController::class, 'complete'])
+        ->middleware('permission:maturity.approve')
+        ->name('maturity-closings.complete');
+    Route::post('/maturity-closings/{closure}/cancel', [MaturityClosingController::class, 'cancel'])
+        ->middleware('permission:maturity.cancel')
+        ->name('maturity-closings.cancel');
+
     Route::get('/pending-dues', [PendingDueController::class, 'index'])
         ->middleware('permission:pending_dues.view')
         ->name('pending-dues.index');
@@ -178,6 +204,9 @@ Route::middleware(['auth', 'verified', 'role:Admin|Manager|Staff'])->group(funct
     Route::post('/chit-enrollments/{enrollment}/ledger/rebuild', [LedgerController::class, 'rebuild'])
         ->middleware(['permission:ledger.chit', 'role:Admin'])
         ->name('chit-enrollments.ledger.rebuild');
+    Route::get('/chit-enrollments/{enrollment}/maturity-calculate', [MaturityClosingController::class, 'calculate'])
+        ->middleware('permission:maturity.view')
+        ->name('chit-enrollments.maturity-calculate');
 
     Route::get('/chit-schemes', [ChitSchemeController::class, 'index'])
         ->middleware('permission:schemes.view')

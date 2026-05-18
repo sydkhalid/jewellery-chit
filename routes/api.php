@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\ChitSchemeController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\InstallmentController;
 use App\Http\Controllers\Api\LedgerController;
+use App\Http\Controllers\Api\MaturityClosingController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PendingDueController;
 use App\Http\Controllers\Api\ReceiptController;
@@ -47,6 +48,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/receipts/{receipt}/download', [ReceiptController::class, 'download'])->middleware('can:receipts.pdf');
 
     Route::get('/ledger', [LedgerController::class, 'index'])->middleware('can:ledger.view');
+
+    Route::get('/maturity-closings', [MaturityClosingController::class, 'index'])->middleware('can:maturity.view');
+    Route::get('/maturity-closings/{closure}', [MaturityClosingController::class, 'show'])->middleware('can:maturity.view');
+    Route::get('/chit-enrollments/{enrollment}/maturity-calculate', [MaturityClosingController::class, 'calculate'])->middleware('can:maturity.view');
 
     Route::get('/pending-dues', [PendingDueController::class, 'index'])->middleware('can:pending_dues.view');
     Route::get('/pending-dues/today', [PendingDueController::class, 'today'])->middleware('can:pending_dues.view');

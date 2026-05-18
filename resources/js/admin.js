@@ -899,6 +899,125 @@ document.querySelector('[data-pending-due-select-all]')?.addEventListener('chang
     });
 });
 
+const maturityClosingsTableElement = document.getElementById('maturity-closings-table');
+let maturityClosingsTable = null;
+
+if (maturityClosingsTableElement && window.jQuery?.fn?.DataTable) {
+    const formatMaturityMoney = (value) => `Rs. ${Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    maturityClosingsTable = window.jQuery(maturityClosingsTableElement).DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: maturityClosingsTableElement.dataset.source,
+            data: (payload) => {
+                payload.customer_id = document.getElementById('maturity-customer-filter')?.value || '';
+                payload.enrollment_id = document.getElementById('maturity-enrollment-filter')?.value || '';
+                payload.closure_type = document.getElementById('maturity-type-filter')?.value || '';
+                payload.status = document.getElementById('maturity-status-filter')?.value || '';
+                payload.from_date = document.getElementById('maturity-from-filter')?.value || '';
+                payload.to_date = document.getElementById('maturity-to-filter')?.value || '';
+            },
+        },
+        order: [[12, 'desc']],
+        columns: [
+            { data: 'closure_no', name: 'closure_no' },
+            { data: 'customer_name', name: 'customer.name' },
+            { data: 'chit_no', name: 'enrollment.chit_no' },
+            { data: 'scheme_name', name: 'enrollment.scheme.name' },
+            { data: 'closure_type_badge', name: 'closure_type', searchable: false },
+            { data: 'total_paid', name: 'total_paid', className: 'text-end', render: formatMaturityMoney },
+            { data: 'shop_bonus', name: 'shop_bonus', className: 'text-end', render: formatMaturityMoney },
+            { data: 'final_maturity_value', name: 'final_maturity_value', className: 'text-end', render: formatMaturityMoney },
+            { data: 'refund_amount', name: 'refund_amount', className: 'text-end', render: formatMaturityMoney },
+            { data: 'jewellery_adjustment_amount', name: 'jewellery_adjustment_amount', className: 'text-end', render: formatMaturityMoney },
+            { data: 'status_badge', name: 'status', searchable: false },
+            { data: 'approver_name', name: 'approver.name' },
+            { data: 'created_at', name: 'created_at' },
+            { data: 'actions', name: 'actions', orderable: false, searchable: false, className: 'text-end' },
+        ],
+    });
+
+    [
+        'maturity-customer-filter',
+        'maturity-enrollment-filter',
+        'maturity-type-filter',
+        'maturity-status-filter',
+        'maturity-from-filter',
+        'maturity-to-filter',
+    ].forEach((id) => {
+        document.getElementById(id)?.addEventListener('change', () => {
+            maturityClosingsTable?.ajax.reload();
+        });
+    });
+}
+
+const maturityForm = document.querySelector('[data-maturity-form]');
+const maturityEnrollmentControl = document.querySelector('[data-maturity-enrollment]');
+const maturityDeductionsControl = document.querySelector('[data-maturity-deductions]');
+const maturitySummaryPanel = document.querySelector('[data-maturity-summary]');
+let maturitySummaryData = null;
+
+const renderMaturitySummary = (summary) => {
+    if (!maturitySummaryPanel || !summary) {
+        return;
+    }
+
+    const deductions = Number(maturityDeductionsControl?.value || summary.deductions || 0);
+    const totalPaid = Number(summary.total_paid || 0);
+    const shopBonus = Number(summary.shop_bonus || 0);
+    const finalValue = Math.max(0, totalPaid + shopBonus - deductions);
+    const money = (value) => `Rs. ${Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    maturitySummaryPanel.innerHTML = `
+        <div class="small text-muted mb-2">${summary.customer?.name || 'Customer'} / ${summary.enrollment?.chit_no || 'Chit'}</div>
+        <div class="d-flex justify-content-between mb-1"><span>Total paid</span><strong>${money(totalPaid)}</strong></div>
+        <div class="d-flex justify-content-between mb-1"><span>Shop bonus</span><strong>${money(shopBonus)}</strong></div>
+        <div class="d-flex justify-content-between mb-1"><span>Deductions</span><strong>${money(deductions)}</strong></div>
+        <hr class="my-2">
+        <div class="d-flex justify-content-between"><span>Final value</span><strong>${money(finalValue)}</strong></div>
+        <div class="small text-muted mt-2">${summary.paid_months || 0} paid months / ${summary.pending_months || 0} pending months</div>
+    `;
+};
+
+const loadMaturityCalculation = async () => {
+    if (!maturityForm || !maturityEnrollmentControl || !maturitySummaryPanel || !maturityEnrollmentControl.value) {
+        return;
+    }
+
+    const url = maturityForm.dataset.calculateTemplate.replace('__ID__', maturityEnrollmentControl.value);
+    maturitySummaryPanel.textContent = 'Calculating maturity value...';
+
+    try {
+        const response = await fetch(url, {
+            headers: {
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+        });
+        const payload = await response.json();
+
+        if (!response.ok || !payload.success) {
+            throw new Error(payload.message || 'Unable to calculate maturity value');
+        }
+
+        maturitySummaryData = payload.data;
+        if (maturityDeductionsControl && (!maturityDeductionsControl.value || Number(maturityDeductionsControl.value) === 0)) {
+            maturityDeductionsControl.value = Number(payload.data.deductions || 0).toFixed(2);
+        }
+        renderMaturitySummary(maturitySummaryData);
+    } catch (error) {
+        maturitySummaryPanel.textContent = error.message;
+    }
+};
+
+maturityEnrollmentControl?.addEventListener('change', loadMaturityCalculation);
+maturityDeductionsControl?.addEventListener('input', () => renderMaturitySummary(maturitySummaryData));
+
+if (maturityEnrollmentControl?.value) {
+    loadMaturityCalculation();
+}
+
 document.addEventListener('click', async (event) => {
     const button = event.target.closest('[data-customer-action]');
 
@@ -1492,6 +1611,94 @@ document.addEventListener('click', async (event) => {
         });
 
         pendingDuesTable?.ajax.reload(null, false);
+    } catch (error) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Action needed',
+            text: error.message,
+        });
+    }
+});
+
+document.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-maturity-action]');
+
+    if (!button) {
+        return;
+    }
+
+    const action = button.dataset.maturityAction;
+    const confirmation = {
+        approve: {
+            icon: 'question',
+            title: 'Approve closing?',
+            text: 'This closing will move to approval-ready status.',
+            confirmButtonText: 'Approve',
+            confirmButtonColor: '#198754',
+        },
+        complete: {
+            icon: 'warning',
+            title: 'Complete closing?',
+            text: 'This will close the enrollment and create ledger, refund, and adjustment entries as applicable.',
+            confirmButtonText: 'Complete',
+            confirmButtonColor: '#0d6efd',
+        },
+        cancel: {
+            icon: 'warning',
+            title: 'Cancel closing?',
+            text: 'Enter the cancellation reason.',
+            input: 'textarea',
+            inputPlaceholder: 'Cancellation reason',
+            inputValidator: (value) => (!value ? 'Cancellation reason is required.' : undefined),
+            confirmButtonText: 'Cancel Closing',
+            confirmButtonColor: '#dc3545',
+        },
+    }[action];
+
+    if (!confirmation) {
+        return;
+    }
+
+    const result = await Swal.fire({
+        ...confirmation,
+        showCancelButton: true,
+    });
+
+    if (!result.isConfirmed) {
+        return;
+    }
+
+    try {
+        const body = action === 'cancel' ? JSON.stringify({ cancellation_reason: result.value }) : JSON.stringify({});
+        const response = await fetch(button.dataset.url, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            body,
+        });
+        const payload = await response.json();
+
+        if (!response.ok || !payload.success) {
+            const firstError = payload.data?.errors ? Object.values(payload.data.errors).flat()[0] : null;
+            throw new Error(firstError || payload.message || 'Unable to process maturity closing');
+        }
+
+        await Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: payload.message,
+            timer: 1800,
+            showConfirmButton: false,
+        });
+
+        if (payload.data?.redirect) {
+            window.location.href = payload.data.redirect;
+        } else {
+            maturityClosingsTable?.ajax.reload(null, false);
+        }
     } catch (error) {
         Swal.fire({
             icon: 'error',
