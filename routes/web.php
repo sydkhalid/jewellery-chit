@@ -16,6 +16,7 @@ use App\Http\Controllers\Web\MaturityClosingController;
 use App\Http\Controllers\Web\PaymentController;
 use App\Http\Controllers\Web\PendingDueController;
 use App\Http\Controllers\Web\ReceiptController;
+use App\Http\Controllers\Web\ReportController;
 use App\Http\Controllers\Web\StaffCashHandoverController;
 use App\Http\Controllers\Web\StaffController;
 use Illuminate\Support\Facades\Route;
@@ -36,6 +37,58 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
     ->name('dashboard');
 
 Route::middleware(['auth', 'verified', 'role:Admin|Manager|Staff'])->group(function () {
+    Route::get('/reports', [ReportController::class, 'index'])
+        ->middleware('permission:reports.view')
+        ->name('reports.index');
+    Route::get('/reports/customers', [ReportController::class, 'customers'])
+        ->middleware('permission:reports.view')
+        ->name('reports.customers');
+    Route::get('/reports/active-chits', [ReportController::class, 'activeChits'])
+        ->middleware('permission:reports.view')
+        ->name('reports.active-chits');
+    Route::get('/reports/collections', [ReportController::class, 'collections'])
+        ->middleware('permission:reports.view')
+        ->name('reports.collections');
+    Route::get('/reports/pending', [ReportController::class, 'pending'])
+        ->middleware('permission:reports.view')
+        ->name('reports.pending');
+    Route::get('/reports/overdue', [ReportController::class, 'overdue'])
+        ->middleware('permission:reports.view')
+        ->name('reports.overdue');
+    Route::get('/reports/matured', [ReportController::class, 'matured'])
+        ->middleware('permission:reports.view')
+        ->name('reports.matured');
+    Route::get('/reports/closed', [ReportController::class, 'closed'])
+        ->middleware('permission:reports.view')
+        ->name('reports.closed');
+    Route::get('/reports/cancelled', [ReportController::class, 'cancelled'])
+        ->middleware('permission:reports.view')
+        ->name('reports.cancelled');
+    Route::get('/reports/staff', [ReportController::class, 'staff'])
+        ->middleware('permission:reports.view')
+        ->name('reports.staff');
+    Route::get('/reports/branches', [ReportController::class, 'branches'])
+        ->middleware('permission:reports.view')
+        ->name('reports.branches');
+    Route::get('/reports/schemes', [ReportController::class, 'schemes'])
+        ->middleware('permission:reports.view')
+        ->name('reports.schemes');
+    Route::get('/reports/receipts', [ReportController::class, 'receipts'])
+        ->middleware('permission:reports.view')
+        ->name('reports.receipts');
+    Route::get('/reports/cashflow', [ReportController::class, 'cashflow'])
+        ->middleware('permission:reports.view')
+        ->name('reports.cashflow');
+    Route::get('/reports/{type}/excel', [ReportController::class, 'exportExcel'])
+        ->middleware('permission:reports.export_excel')
+        ->name('reports.excel');
+    Route::get('/reports/{type}/pdf', [ReportController::class, 'exportPdf'])
+        ->middleware('permission:reports.export_pdf')
+        ->name('reports.pdf');
+    Route::get('/reports/{type}/print', [ReportController::class, 'printReport'])
+        ->middleware('permission:reports.print')
+        ->name('reports.print');
+
     Route::get('/cashbooks', [CashbookController::class, 'index'])
         ->middleware('permission:cashbook.view')
         ->name('cashbooks.index');

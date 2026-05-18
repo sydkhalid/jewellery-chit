@@ -1567,6 +1567,103 @@ if (cashbooksTableElement && window.jQuery?.fn?.DataTable) {
     });
 }
 
+const reportTableElement = document.querySelector('[data-report-table]');
+let reportTable = null;
+const reportMoney = (value) => `Rs. ${Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+const reportFilterPayload = () => {
+    const payload = {};
+
+    document.querySelectorAll('[data-report-filter]').forEach((field) => {
+        payload[field.dataset.reportFilter] = field.value || '';
+    });
+
+    return payload;
+};
+
+const reportParams = () => new URLSearchParams(reportFilterPayload());
+
+const refreshReportExportLinks = () => {
+    const params = reportParams().toString();
+
+    document.querySelectorAll('[data-report-export]').forEach((link) => {
+        if (!link.dataset.baseHref) {
+            link.dataset.baseHref = link.getAttribute('href');
+        }
+
+        link.setAttribute('href', `${link.dataset.baseHref}${params ? `?${params}` : ''}`);
+    });
+};
+
+const refreshReportSummary = async () => {
+    if (!reportTableElement) {
+        return;
+    }
+
+    const params = reportParams();
+    params.set('summary', '1');
+
+    try {
+        const response = await fetch(`${reportTableElement.dataset.source}?${params.toString()}`, {
+            headers: { Accept: 'application/json' },
+        });
+        const payload = await response.json();
+
+        if (!response.ok || !payload.success) {
+            throw new Error(payload.message || 'Unable to refresh report summary');
+        }
+
+        const summaryContainer = document.querySelector('[data-report-summary]');
+        const cards = payload.data?.summary || [];
+
+        if (summaryContainer) {
+            summaryContainer.innerHTML = cards.map((card) => `
+                <div class="col-md-3">
+                    <div class="admin-card h-100">
+                        <div class="text-muted small">${card.label}</div>
+                        <div class="metric-value">${card.value}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+    } catch (error) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Action needed',
+            text: error.message,
+        });
+    }
+};
+
+if (reportTableElement && window.jQuery?.fn?.DataTable) {
+    const reportColumns = JSON.parse(reportTableElement.dataset.columns || '[]').map((column) => ({
+        data: column.data,
+        name: column.data,
+        className: column.className || '',
+        render: column.money ? reportMoney : undefined,
+    }));
+
+    reportTable = window.jQuery(reportTableElement).DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: reportTableElement.dataset.source,
+            data: (payload) => Object.assign(payload, reportFilterPayload()),
+        },
+        columns: reportColumns,
+    });
+
+    document.querySelectorAll('[data-report-filter]').forEach((field) => {
+        field.addEventListener('change', () => {
+            refreshReportExportLinks();
+            refreshReportSummary();
+            reportTable?.ajax.reload();
+        });
+    });
+
+    refreshReportExportLinks();
+}
+
 document.addEventListener('click', async (event) => {
     const button = event.target.closest('[data-customer-action]');
 

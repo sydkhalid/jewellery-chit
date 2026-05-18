@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\MaturityClosingController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PendingDueController;
 use App\Http\Controllers\Api\ReceiptController;
+use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\StaffCashHandoverController;
 use App\Http\Controllers\Api\StaffController;
 use Illuminate\Support\Facades\Route;
@@ -29,6 +30,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/cashbooks/date-range-summary', [CashbookController::class, 'dateRangeSummary'])->middleware('can:cashbook.view');
     Route::get('/cashbooks/payment-mode-summary', [CashbookController::class, 'paymentModeSummary'])->middleware('can:cashbook.view');
     Route::get('/cashbooks/{cashbook}', [CashbookController::class, 'show'])->middleware('can:cashbook.view');
+
+    Route::get('/reports/dashboard-summary', [ReportController::class, 'dashboardSummary'])->middleware('can:reports.view');
+    Route::get('/reports/collection-summary', [ReportController::class, 'collectionSummary'])->middleware('can:reports.view');
+    Route::get('/reports/pending-summary', [ReportController::class, 'pendingSummary'])->middleware('can:reports.view');
+    Route::get('/reports/staff-collection-summary', [ReportController::class, 'staffCollectionSummary'])->middleware('can:reports.view');
+    Route::get('/reports/branch-collection-summary', [ReportController::class, 'branchCollectionSummary'])->middleware('can:reports.view');
 
     Route::get('/branches', [BranchController::class, 'index'])->middleware('can:branch.view');
     Route::get('/branches/{branch}', [BranchController::class, 'show'])->middleware('can:branch.view');
