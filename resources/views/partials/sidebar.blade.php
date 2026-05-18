@@ -106,10 +106,10 @@
             'title' => 'Jewellery Billing',
             'icon' => 'bi-gem',
             'permissions' => ['jewellery.view', 'jewellery.create', 'jewellery.edit', 'jewellery.cancel', 'jewellery.adjust_chit'],
+            'active' => request()->routeIs('jewellery-invoices.*'),
             'children' => [
-                ['title' => 'Billing Register', 'permission' => 'jewellery.view'],
-                ['title' => 'New Bill', 'permission' => 'jewellery.create'],
-                ['title' => 'Chit Adjustment', 'permission' => 'jewellery.adjust_chit'],
+                ['title' => 'Invoice List', 'permission' => 'jewellery.view', 'route' => route('jewellery-invoices.index'), 'active' => request()->routeIs('jewellery-invoices.index', 'jewellery-invoices.show', 'jewellery-invoices.edit')],
+                ['title' => 'Create Invoice', 'permission' => 'jewellery.create', 'route' => route('jewellery-invoices.create'), 'active' => request()->routeIs('jewellery-invoices.create')],
             ],
         ],
         [

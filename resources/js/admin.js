@@ -1018,6 +1018,237 @@ if (maturityEnrollmentControl?.value) {
     loadMaturityCalculation();
 }
 
+const jewelleryInvoicesTableElement = document.getElementById('jewellery-invoices-table');
+let jewelleryInvoicesTable = null;
+
+if (jewelleryInvoicesTableElement && window.jQuery?.fn?.DataTable) {
+    const formatJewelleryMoney = (value) => `Rs. ${Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const formatJewelleryWeight = (value) => Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+
+    jewelleryInvoicesTable = window.jQuery(jewelleryInvoicesTableElement).DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: jewelleryInvoicesTableElement.dataset.source,
+            data: (payload) => {
+                payload.customer_id = document.getElementById('jewellery-customer-filter')?.value || '';
+                payload.enrollment_id = document.getElementById('jewellery-enrollment-filter')?.value || '';
+                payload.status = document.getElementById('jewellery-status-filter')?.value || '';
+                payload.from_date = document.getElementById('jewellery-from-filter')?.value || '';
+                payload.to_date = document.getElementById('jewellery-to-filter')?.value || '';
+            },
+        },
+        order: [[4, 'desc']],
+        columns: [
+            { data: 'invoice_no', name: 'invoice_no' },
+            { data: 'customer_name', name: 'customer.name' },
+            { data: 'chit_no', name: 'enrollment.chit_no' },
+            { data: 'scheme_name', name: 'enrollment.scheme.name' },
+            { data: 'invoice_date', name: 'invoice_date' },
+            { data: 'gold_rate', name: 'gold_rate', className: 'text-end', render: formatJewelleryMoney },
+            { data: 'net_weight', name: 'net_weight', className: 'text-end', render: formatJewelleryWeight },
+            { data: 'total_amount', name: 'total_amount', className: 'text-end', render: formatJewelleryMoney },
+            { data: 'chit_adjustment_amount', name: 'chit_adjustment_amount', className: 'text-end', render: formatJewelleryMoney },
+            { data: 'balance_payable', name: 'balance_payable', className: 'text-end', render: formatJewelleryMoney },
+            { data: 'status_badge', name: 'status', searchable: false },
+            { data: 'actions', name: 'actions', orderable: false, searchable: false, className: 'text-end' },
+        ],
+    });
+
+    [
+        'jewellery-customer-filter',
+        'jewellery-enrollment-filter',
+        'jewellery-status-filter',
+        'jewellery-from-filter',
+        'jewellery-to-filter',
+    ].forEach((id) => {
+        document.getElementById(id)?.addEventListener('change', () => {
+            jewelleryInvoicesTable?.ajax.reload();
+        });
+    });
+}
+
+const jewelleryForm = document.querySelector('[data-jewellery-form]');
+const jewelleryCustomerControl = document.querySelector('[data-jewellery-customer]');
+const jewelleryEnrollmentControl = document.querySelector('[data-jewellery-enrollment]');
+const jewelleryAdjustmentControl = document.querySelector('[data-jewellery-adjustment]');
+const jewelleryAdjustmentHelp = document.querySelector('[data-jewellery-adjustment-help]');
+const jewelleryDiscountControl = document.querySelector('[data-jewellery-discount]');
+const jewellerySummaryPanel = document.querySelector('[data-jewellery-summary]');
+const jewelleryItemsTable = document.querySelector('[data-jewellery-items-table]');
+const jewelleryRowTemplate = document.querySelector('[data-jewellery-row-template]');
+
+const jewelleryNumber = (value) => Number(value || 0);
+const jewelleryMoney = (value) => `Rs. ${Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+const updateJewelleryTotals = () => {
+    if (!jewelleryForm || !jewelleryItemsTable) {
+        return;
+    }
+
+    const totals = {
+        gross_weight: 0,
+        net_weight: 0,
+        making_charge: 0,
+        wastage: 0,
+        gst_amount: 0,
+        item_total: 0,
+    };
+
+    jewelleryItemsTable.querySelectorAll('[data-jewellery-item-row]').forEach((row) => {
+        const grossWeight = jewelleryNumber(row.querySelector('[data-jewellery-item="gross_weight"]')?.value);
+        const netWeight = jewelleryNumber(row.querySelector('[data-jewellery-item="net_weight"]')?.value);
+        const rate = jewelleryNumber(row.querySelector('[data-jewellery-item="rate"]')?.value);
+        const makingCharge = jewelleryNumber(row.querySelector('[data-jewellery-item="making_charge"]')?.value);
+        const wastage = jewelleryNumber(row.querySelector('[data-jewellery-item="wastage"]')?.value);
+        const gstAmount = jewelleryNumber(row.querySelector('[data-jewellery-item="gst_amount"]')?.value);
+        const itemTotal = Math.max(0, (netWeight * rate) + makingCharge + wastage + gstAmount);
+
+        row.querySelector('[data-jewellery-item-total]').value = itemTotal.toFixed(2);
+        totals.gross_weight += grossWeight;
+        totals.net_weight += netWeight;
+        totals.making_charge += makingCharge;
+        totals.wastage += wastage;
+        totals.gst_amount += gstAmount;
+        totals.item_total += itemTotal;
+    });
+
+    const discount = jewelleryNumber(jewelleryDiscountControl?.value);
+    const invoiceTotal = Math.max(0, totals.item_total - discount);
+    const adjustment = Math.min(jewelleryNumber(jewelleryAdjustmentControl?.value), invoiceTotal);
+    const balancePayable = Math.max(0, invoiceTotal - adjustment);
+
+    if (jewelleryAdjustmentControl && jewelleryNumber(jewelleryAdjustmentControl.value) !== adjustment) {
+        jewelleryAdjustmentControl.value = adjustment.toFixed(2);
+    }
+
+    const setTotal = (name, value, decimals = 2) => {
+        const control = jewelleryForm.querySelector(`[data-jewellery-total="${name}"]`);
+        if (control) {
+            control.value = Number(value || 0).toFixed(decimals);
+        }
+    };
+
+    setTotal('gross_weight', totals.gross_weight, 3);
+    setTotal('net_weight', totals.net_weight, 3);
+    setTotal('making_charge', totals.making_charge);
+    setTotal('wastage', totals.wastage);
+    setTotal('gst_amount', totals.gst_amount);
+    setTotal('total_amount', invoiceTotal);
+    setTotal('balance_payable', balancePayable);
+
+    if (jewellerySummaryPanel) {
+        jewellerySummaryPanel.innerHTML = `
+            <div class="d-flex justify-content-between mb-1"><span>Items total</span><strong>${jewelleryMoney(totals.item_total)}</strong></div>
+            <div class="d-flex justify-content-between mb-1"><span>Discount</span><strong>${jewelleryMoney(discount)}</strong></div>
+            <div class="d-flex justify-content-between mb-1"><span>Chit adjustment</span><strong>${jewelleryMoney(adjustment)}</strong></div>
+            <hr class="my-2">
+            <div class="d-flex justify-content-between"><span>Balance payable</span><strong>${jewelleryMoney(balancePayable)}</strong></div>
+        `;
+    }
+};
+
+const loadCustomerMaturedChits = async () => {
+    if (!jewelleryForm || !jewelleryCustomerControl || !jewelleryEnrollmentControl || !jewelleryCustomerControl.value) {
+        return;
+    }
+
+    const selectedEnrollment = jewelleryEnrollmentControl.value;
+    const url = jewelleryForm.dataset.maturedChitsTemplate.replace('__ID__', jewelleryCustomerControl.value);
+
+    try {
+        const response = await fetch(url, {
+            headers: {
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+        });
+        const payload = await response.json();
+
+        if (!response.ok || !payload.success) {
+            throw new Error(payload.message || 'Unable to load matured chits');
+        }
+
+        jewelleryEnrollmentControl.innerHTML = '<option value="">No chit adjustment</option>';
+        payload.data.chits.forEach((chit) => {
+            const option = document.createElement('option');
+            option.value = chit.id;
+            option.dataset.available = chit.available_adjustment;
+            option.textContent = `${chit.chit_no} - ${chit.scheme_name || 'Scheme'} - Available ${jewelleryMoney(chit.available_adjustment)}`;
+            option.selected = String(chit.id) === String(selectedEnrollment);
+            jewelleryEnrollmentControl.appendChild(option);
+        });
+        jewelleryEnrollmentControl.dispatchEvent(new Event('change'));
+    } catch (error) {
+        if (jewelleryAdjustmentHelp) {
+            jewelleryAdjustmentHelp.textContent = error.message;
+        }
+    }
+};
+
+const updateJewelleryAdjustmentHelp = () => {
+    const option = jewelleryEnrollmentControl?.selectedOptions?.[0];
+    const available = jewelleryNumber(option?.dataset?.available);
+
+    if (jewelleryAdjustmentHelp) {
+        jewelleryAdjustmentHelp.textContent = available > 0
+            ? `Available adjustment: ${jewelleryMoney(available)}`
+            : 'Select a matured chit to apply adjustment.';
+    }
+
+    if (jewelleryAdjustmentControl) {
+        jewelleryAdjustmentControl.max = available > 0 ? available : '';
+    }
+};
+
+if (jewelleryForm) {
+    jewelleryForm.addEventListener('input', (event) => {
+        if (event.target.closest('[data-jewellery-items-table]') || event.target.matches('[data-jewellery-discount], [data-jewellery-adjustment]')) {
+            updateJewelleryTotals();
+        }
+    });
+
+    jewelleryCustomerControl?.addEventListener('change', loadCustomerMaturedChits);
+    jewelleryEnrollmentControl?.addEventListener('change', () => {
+        updateJewelleryAdjustmentHelp();
+        updateJewelleryTotals();
+    });
+
+    document.querySelector('[data-jewellery-add-row]')?.addEventListener('click', () => {
+        if (!jewelleryRowTemplate || !jewelleryItemsTable) {
+            return;
+        }
+
+        const index = jewelleryItemsTable.querySelectorAll('[data-jewellery-item-row]').length;
+        const html = jewelleryRowTemplate.innerHTML.replaceAll('__INDEX__', String(index));
+        jewelleryItemsTable.querySelector('tbody')?.insertAdjacentHTML('beforeend', html);
+        updateJewelleryTotals();
+    });
+
+    jewelleryItemsTable?.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-jewellery-remove-row]');
+
+        if (!button) {
+            return;
+        }
+
+        const rows = jewelleryItemsTable.querySelectorAll('[data-jewellery-item-row]');
+        if (rows.length <= 1) {
+            return;
+        }
+
+        button.closest('[data-jewellery-item-row]')?.remove();
+        updateJewelleryTotals();
+    });
+
+    updateJewelleryAdjustmentHelp();
+    updateJewelleryTotals();
+
+    if (jewelleryCustomerControl?.value) {
+        loadCustomerMaturedChits();
+    }
+}
+
 document.addEventListener('click', async (event) => {
     const button = event.target.closest('[data-customer-action]');
 
@@ -1698,6 +1929,88 @@ document.addEventListener('click', async (event) => {
             window.location.href = payload.data.redirect;
         } else {
             maturityClosingsTable?.ajax.reload(null, false);
+        }
+    } catch (error) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Action needed',
+            text: error.message,
+        });
+    }
+});
+
+document.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-jewellery-action]');
+
+    if (!button) {
+        return;
+    }
+
+    const action = button.dataset.jewelleryAction;
+    const confirmation = {
+        finalize: {
+            icon: 'question',
+            title: 'Finalize invoice?',
+            text: 'Final invoices cannot be edited. Chit adjustment, ledger, and cashbook entries will be created if applicable.',
+            confirmButtonText: 'Finalize',
+            confirmButtonColor: '#198754',
+        },
+        cancel: {
+            icon: 'warning',
+            title: 'Cancel invoice?',
+            text: 'Enter the cancellation reason.',
+            input: 'textarea',
+            inputPlaceholder: 'Cancellation reason',
+            inputValidator: (value) => (!value ? 'Cancellation reason is required.' : undefined),
+            confirmButtonText: 'Cancel Invoice',
+            confirmButtonColor: '#dc3545',
+        },
+    }[action];
+
+    if (!confirmation) {
+        return;
+    }
+
+    const result = await Swal.fire({
+        ...confirmation,
+        showCancelButton: true,
+    });
+
+    if (!result.isConfirmed) {
+        return;
+    }
+
+    try {
+        const response = await fetch(button.dataset.url, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            body: action === 'cancel'
+                ? JSON.stringify({ cancellation_reason: result.value })
+                : JSON.stringify({}),
+        });
+        const payload = await response.json();
+
+        if (!response.ok || !payload.success) {
+            const firstError = payload.data?.errors ? Object.values(payload.data.errors).flat()[0] : null;
+            throw new Error(firstError || payload.message || 'Unable to process jewellery invoice');
+        }
+
+        await Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: payload.message,
+            timer: 1800,
+            showConfirmButton: false,
+        });
+
+        if (payload.data?.redirect) {
+            window.location.href = payload.data.redirect;
+        } else {
+            jewelleryInvoicesTable?.ajax.reload(null, false);
         }
     } catch (error) {
         Swal.fire({

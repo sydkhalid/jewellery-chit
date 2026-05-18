@@ -7,6 +7,7 @@ use App\Http\Controllers\Web\ChitSchemeController;
 use App\Http\Controllers\Web\CustomerController;
 use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\InstallmentController;
+use App\Http\Controllers\Web\JewelleryInvoiceController;
 use App\Http\Controllers\Web\LedgerController;
 use App\Http\Controllers\Web\MaturityClosingController;
 use App\Http\Controllers\Web\PaymentController;
@@ -30,6 +31,37 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
     ->name('dashboard');
 
 Route::middleware(['auth', 'verified', 'role:Admin|Manager|Staff'])->group(function () {
+    Route::get('/jewellery-invoices', [JewelleryInvoiceController::class, 'index'])
+        ->middleware('permission:jewellery.view')
+        ->name('jewellery-invoices.index');
+    Route::get('/jewellery-invoices/data', [JewelleryInvoiceController::class, 'data'])
+        ->middleware('permission:jewellery.view')
+        ->name('jewellery-invoices.data');
+    Route::get('/jewellery-invoices/create', [JewelleryInvoiceController::class, 'create'])
+        ->middleware('permission:jewellery.create')
+        ->name('jewellery-invoices.create');
+    Route::post('/jewellery-invoices', [JewelleryInvoiceController::class, 'store'])
+        ->middleware('permission:jewellery.create')
+        ->name('jewellery-invoices.store');
+    Route::post('/jewellery-invoices/calculate', [JewelleryInvoiceController::class, 'calculate'])
+        ->middleware('permission:jewellery.create')
+        ->name('jewellery-invoices.calculate');
+    Route::get('/jewellery-invoices/{invoice}', [JewelleryInvoiceController::class, 'show'])
+        ->middleware('permission:jewellery.view')
+        ->name('jewellery-invoices.show');
+    Route::get('/jewellery-invoices/{invoice}/edit', [JewelleryInvoiceController::class, 'edit'])
+        ->middleware('permission:jewellery.edit')
+        ->name('jewellery-invoices.edit');
+    Route::put('/jewellery-invoices/{invoice}', [JewelleryInvoiceController::class, 'update'])
+        ->middleware('permission:jewellery.edit')
+        ->name('jewellery-invoices.update');
+    Route::post('/jewellery-invoices/{invoice}/finalize', [JewelleryInvoiceController::class, 'finalize'])
+        ->middleware('permission:jewellery.create')
+        ->name('jewellery-invoices.finalize');
+    Route::post('/jewellery-invoices/{invoice}/cancel', [JewelleryInvoiceController::class, 'cancel'])
+        ->middleware('permission:jewellery.cancel')
+        ->name('jewellery-invoices.cancel');
+
     Route::get('/maturity-closings', [MaturityClosingController::class, 'index'])
         ->middleware('permission:maturity.view')
         ->name('maturity-closings.index');
@@ -242,6 +274,9 @@ Route::middleware(['auth', 'verified', 'role:Admin|Manager|Staff'])->group(funct
     Route::get('/customers/data', [CustomerController::class, 'data'])
         ->middleware('permission:customers.view')
         ->name('customers.data');
+    Route::get('/customers/{customer}/matured-chits', [JewelleryInvoiceController::class, 'getCustomerMaturedChits'])
+        ->middleware('permission:jewellery.adjust_chit')
+        ->name('customers.matured-chits');
     Route::get('/customers/create', [CustomerController::class, 'create'])
         ->middleware('permission:customers.create')
         ->name('customers.create');

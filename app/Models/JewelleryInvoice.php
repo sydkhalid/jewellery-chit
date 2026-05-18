@@ -30,6 +30,11 @@ class JewelleryInvoice extends Model
         'balance_payable',
         'status',
         'created_by',
+        'finalized_by',
+        'finalized_at',
+        'cancelled_by',
+        'cancelled_at',
+        'cancellation_reason',
     ];
 
     protected function casts(): array
@@ -46,6 +51,8 @@ class JewelleryInvoice extends Model
             'chit_adjustment_amount' => 'decimal:2',
             'total_amount' => 'decimal:2',
             'balance_payable' => 'decimal:2',
+            'finalized_at' => 'datetime',
+            'cancelled_at' => 'datetime',
         ];
     }
 
@@ -62,6 +69,16 @@ class JewelleryInvoice extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function finalizer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'finalized_by');
+    }
+
+    public function canceller(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cancelled_by');
     }
 
     public function items(): HasMany
