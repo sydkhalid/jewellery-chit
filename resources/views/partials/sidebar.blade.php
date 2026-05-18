@@ -116,10 +116,10 @@
             'title' => 'Gold Rates',
             'icon' => 'bi-currency-exchange',
             'permissions' => ['gold_rates.view', 'gold_rates.create', 'gold_rates.edit', 'gold_rates.approve', 'gold_rates.lock'],
+            'active' => request()->routeIs('gold-rates.*'),
             'children' => [
-                ['title' => 'Rate Board', 'permission' => 'gold_rates.view'],
-                ['title' => 'Update Rates', 'permission' => 'gold_rates.create'],
-                ['title' => 'Approve Rates', 'permission' => 'gold_rates.approve'],
+                ['title' => 'Rate List', 'permission' => 'gold_rates.view', 'route' => route('gold-rates.index'), 'active' => request()->routeIs('gold-rates.index', 'gold-rates.show', 'gold-rates.edit')],
+                ['title' => 'Add Rate', 'permission' => 'gold_rates.create', 'route' => route('gold-rates.create'), 'active' => request()->routeIs('gold-rates.create')],
             ],
         ],
         [

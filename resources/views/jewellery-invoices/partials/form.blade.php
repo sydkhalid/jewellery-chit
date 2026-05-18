@@ -42,7 +42,8 @@
 
     <div class="col-md-2">
         <label class="form-label" for="gold_rate">Gold rate</label>
-        <input type="number" step="0.01" min="1" class="form-control" id="gold_rate" name="gold_rate" data-jewellery-gold-rate value="{{ old('gold_rate', $invoice->gold_rate ?? 1) }}" required>
+        <input type="number" step="0.01" min="1" class="form-control" id="gold_rate" name="gold_rate" data-jewellery-gold-rate value="{{ old('gold_rate', $invoice->gold_rate ?? ($latestGoldRate?->gold_22k ?? 1)) }}" readonly required>
+        <div class="form-text">{{ $latestGoldRate ? 'Latest approved 22K rate dated '.$latestGoldRate->rate_date->format('d M Y') : 'Approve a gold rate before creating invoices.' }}</div>
         <div class="invalid-feedback" data-error-for="gold_rate"></div>
     </div>
 

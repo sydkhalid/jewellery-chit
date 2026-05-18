@@ -20,7 +20,8 @@ class JewelleryInvoiceService
 {
     public function __construct(
         private readonly JewelleryInvoiceRepository $invoices,
-        private readonly LedgerService $ledgerService
+        private readonly LedgerService $ledgerService,
+        private readonly GoldRateService $goldRateService
     ) {
     }
 
@@ -30,6 +31,7 @@ class JewelleryInvoiceService
     public function createInvoice(array $data): JewelleryInvoice
     {
         return DB::transaction(function () use ($data): JewelleryInvoice {
+            $this->assertApprovedBillingRate((float) $data['gold_rate']);
             $totals = $this->calculateInvoiceTotals($data['items'], $data);
             $enrollment = $this->resolveAdjustmentEnrollment($data, null, $totals);
 
@@ -72,6 +74,7 @@ class JewelleryInvoiceService
                 ]);
             }
 
+            $this->assertApprovedBillingRate((float) $data['gold_rate']);
             $oldValues = $invoice->load('items')->toArray();
             $totals = $this->calculateInvoiceTotals($data['items'], $data);
             $enrollment = $this->resolveAdjustmentEnrollment($data, $invoice, $totals);
@@ -469,6 +472,17 @@ class JewelleryInvoiceService
             ->when($branchId, fn ($query): mixed => $query->where('branch_id', $branchId))
             ->latest('id')
             ->value('balance');
+    }
+
+    private function assertApprovedBillingRate(float $goldRate): void
+    {
+        $approvedRate = $this->goldRateService->approvedBillingRate();
+
+        if (round($goldRate, 2) !== round((float) $approvedRate->gold_22k, 2)) {
+            throw ValidationException::withMessages([
+                'gold_rate' => 'Jewellery invoices must use the latest approved 22K gold rate.',
+            ]);
+        }
     }
 
     /**

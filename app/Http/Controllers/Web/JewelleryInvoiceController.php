@@ -11,6 +11,7 @@ use App\Models\ChitEnrollment;
 use App\Models\Customer;
 use App\Models\JewelleryInvoice;
 use App\Repositories\JewelleryInvoiceRepository;
+use App\Services\GoldRateService;
 use App\Services\JewelleryInvoiceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -24,7 +25,8 @@ class JewelleryInvoiceController extends Controller
 {
     public function __construct(
         private readonly JewelleryInvoiceRepository $invoices,
-        private readonly JewelleryInvoiceService $jewelleryInvoiceService
+        private readonly JewelleryInvoiceService $jewelleryInvoiceService,
+        private readonly GoldRateService $goldRateService
     ) {
     }
 
@@ -60,7 +62,7 @@ class JewelleryInvoiceController extends Controller
             'invoice' => new JewelleryInvoice([
                 'invoice_date' => now(),
                 'status' => 'draft',
-                'gold_rate' => 1,
+                'gold_rate' => $this->goldRateService->getLatestApprovedRate()?->gold_22k ?? 1,
             ]),
         ]);
     }
@@ -207,6 +209,7 @@ class JewelleryInvoiceController extends Controller
                 ->filter(fn (ChitEnrollment $enrollment): bool => $this->jewelleryInvoiceService->isAdjustmentEligible($enrollment))
                 ->values(),
             'statuses' => ['draft', 'final', 'cancelled'],
+            'latestGoldRate' => $this->goldRateService->getLatestApprovedRate(),
         ];
     }
 

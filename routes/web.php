@@ -6,6 +6,7 @@ use App\Http\Controllers\Web\ChitEnrollmentController;
 use App\Http\Controllers\Web\ChitSchemeController;
 use App\Http\Controllers\Web\CustomerController;
 use App\Http\Controllers\Web\DashboardController;
+use App\Http\Controllers\Web\GoldRateController;
 use App\Http\Controllers\Web\InstallmentController;
 use App\Http\Controllers\Web\JewelleryInvoiceController;
 use App\Http\Controllers\Web\LedgerController;
@@ -31,6 +32,40 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
     ->name('dashboard');
 
 Route::middleware(['auth', 'verified', 'role:Admin|Manager|Staff'])->group(function () {
+    Route::get('/gold-rates', [GoldRateController::class, 'index'])
+        ->middleware('permission:gold_rates.view')
+        ->name('gold-rates.index');
+    Route::get('/gold-rates/data', [GoldRateController::class, 'data'])
+        ->middleware('permission:gold_rates.view')
+        ->name('gold-rates.data');
+    Route::get('/gold-rates/create', [GoldRateController::class, 'create'])
+        ->middleware('permission:gold_rates.create')
+        ->name('gold-rates.create');
+    Route::post('/gold-rates', [GoldRateController::class, 'store'])
+        ->middleware('permission:gold_rates.create')
+        ->name('gold-rates.store');
+    Route::get('/gold-rates/latest', [GoldRateController::class, 'latest'])
+        ->middleware('permission:gold_rates.view')
+        ->name('gold-rates.latest');
+    Route::get('/gold-rates/{goldRate}', [GoldRateController::class, 'show'])
+        ->middleware('permission:gold_rates.view')
+        ->name('gold-rates.show');
+    Route::get('/gold-rates/{goldRate}/edit', [GoldRateController::class, 'edit'])
+        ->middleware('permission:gold_rates.edit')
+        ->name('gold-rates.edit');
+    Route::put('/gold-rates/{goldRate}', [GoldRateController::class, 'update'])
+        ->middleware('permission:gold_rates.edit')
+        ->name('gold-rates.update');
+    Route::post('/gold-rates/{goldRate}/approve', [GoldRateController::class, 'approve'])
+        ->middleware('permission:gold_rates.approve')
+        ->name('gold-rates.approve');
+    Route::post('/gold-rates/{goldRate}/reject', [GoldRateController::class, 'reject'])
+        ->middleware('permission:gold_rates.approve')
+        ->name('gold-rates.reject');
+    Route::post('/gold-rates/{goldRate}/lock', [GoldRateController::class, 'lock'])
+        ->middleware('permission:gold_rates.lock')
+        ->name('gold-rates.lock');
+
     Route::get('/jewellery-invoices', [JewelleryInvoiceController::class, 'index'])
         ->middleware('permission:jewellery.view')
         ->name('jewellery-invoices.index');

@@ -1249,6 +1249,50 @@ if (jewelleryForm) {
     }
 }
 
+const goldRatesTableElement = document.getElementById('gold-rates-table');
+let goldRatesTable = null;
+
+if (goldRatesTableElement && window.jQuery?.fn?.DataTable) {
+    const formatRateMoney = (value) => value === null || value === undefined || value === ''
+        ? '-'
+        : `Rs. ${Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    goldRatesTable = window.jQuery(goldRatesTableElement).DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: goldRatesTableElement.dataset.source,
+            data: (payload) => {
+                payload.rate_date = document.getElementById('gold-rate-date-filter')?.value || '';
+                payload.status = document.getElementById('gold-rate-status-filter')?.value || '';
+                payload.rate_locked = document.getElementById('gold-rate-lock-filter')?.value || '';
+            },
+        },
+        order: [[0, 'desc']],
+        columns: [
+            { data: 'rate_date', name: 'rate_date' },
+            { data: 'gold_22k', name: 'gold_22k', className: 'text-end', render: formatRateMoney },
+            { data: 'gold_24k', name: 'gold_24k', className: 'text-end', render: formatRateMoney },
+            { data: 'silver_rate', name: 'silver_rate', className: 'text-end', render: formatRateMoney },
+            { data: 'status_badge', name: 'status', searchable: false },
+            { data: 'lock_badge', name: 'rate_locked', searchable: false },
+            { data: 'creator_name', name: 'creator.name' },
+            { data: 'approver_name', name: 'approver.name' },
+            { data: 'actions', name: 'actions', orderable: false, searchable: false, className: 'text-end' },
+        ],
+    });
+
+    [
+        'gold-rate-date-filter',
+        'gold-rate-status-filter',
+        'gold-rate-lock-filter',
+    ].forEach((id) => {
+        document.getElementById(id)?.addEventListener('change', () => {
+            goldRatesTable?.ajax.reload();
+        });
+    });
+}
+
 document.addEventListener('click', async (event) => {
     const button = event.target.closest('[data-customer-action]');
 
@@ -2011,6 +2055,92 @@ document.addEventListener('click', async (event) => {
             window.location.href = payload.data.redirect;
         } else {
             jewelleryInvoicesTable?.ajax.reload(null, false);
+        }
+    } catch (error) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Action needed',
+            text: error.message,
+        });
+    }
+});
+
+document.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-gold-rate-action]');
+
+    if (!button) {
+        return;
+    }
+
+    const action = button.dataset.goldRateAction;
+    const confirmation = {
+        approve: {
+            icon: 'question',
+            title: 'Approve rate?',
+            text: 'Approved rates become available for jewellery billing.',
+            confirmButtonText: 'Approve',
+            confirmButtonColor: '#198754',
+        },
+        reject: {
+            icon: 'warning',
+            title: 'Reject rate?',
+            text: 'Add a rejection reason if needed.',
+            input: 'textarea',
+            inputPlaceholder: 'Reason',
+            confirmButtonText: 'Reject',
+            confirmButtonColor: '#d9a441',
+        },
+        lock: {
+            icon: 'warning',
+            title: 'Lock rate?',
+            text: 'Locked rates cannot be edited.',
+            confirmButtonText: 'Lock',
+            confirmButtonColor: '#212529',
+        },
+    }[action];
+
+    if (!confirmation) {
+        return;
+    }
+
+    const result = await Swal.fire({
+        ...confirmation,
+        showCancelButton: true,
+    });
+
+    if (!result.isConfirmed) {
+        return;
+    }
+
+    try {
+        const response = await fetch(button.dataset.url, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            body: action === 'reject' ? JSON.stringify({ reason: result.value || '' }) : JSON.stringify({}),
+        });
+        const payload = await response.json();
+
+        if (!response.ok || !payload.success) {
+            const firstError = payload.data?.errors ? Object.values(payload.data.errors).flat()[0] : null;
+            throw new Error(firstError || payload.message || 'Unable to process gold rate');
+        }
+
+        await Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: payload.message,
+            timer: 1800,
+            showConfirmButton: false,
+        });
+
+        if (payload.data?.redirect) {
+            window.location.href = payload.data.redirect;
+        } else {
+            goldRatesTable?.ajax.reload(null, false);
         }
     } catch (error) {
         Swal.fire({

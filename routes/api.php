@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ChitEnrollmentController;
 use App\Http\Controllers\Api\ChitSchemeController;
 use App\Http\Controllers\Api\CustomerController;
+use App\Http\Controllers\Api\GoldRateController;
 use App\Http\Controllers\Api\InstallmentController;
 use App\Http\Controllers\Api\JewelleryInvoiceController;
 use App\Http\Controllers\Api\LedgerController;
@@ -57,6 +58,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/jewellery-invoices', [JewelleryInvoiceController::class, 'index'])->middleware('can:jewellery.view');
     Route::post('/jewellery-invoices', [JewelleryInvoiceController::class, 'store'])->middleware('can:jewellery.create');
     Route::get('/jewellery-invoices/{invoice}', [JewelleryInvoiceController::class, 'show'])->middleware('can:jewellery.view');
+
+    Route::get('/gold-rates', [GoldRateController::class, 'index'])->middleware('can:gold_rates.view');
+    Route::get('/gold-rates/latest', [GoldRateController::class, 'latest'])->middleware('can:gold_rates.view');
+    Route::get('/gold-rates/{goldRate}', [GoldRateController::class, 'show'])->middleware('can:gold_rates.view');
 
     Route::get('/pending-dues', [PendingDueController::class, 'index'])->middleware('can:pending_dues.view');
     Route::get('/pending-dues/today', [PendingDueController::class, 'today'])->middleware('can:pending_dues.view');
