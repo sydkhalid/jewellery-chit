@@ -149,6 +149,27 @@
                 <h3>Receipt</h3>
                 <p>{{ $payment->receipt?->receipt_no ?: 'Receipt not generated' }}</p>
             </div>
+            @if ($payment->receipt)
+                <div class="d-flex flex-wrap gap-2">
+                    @can('receipts.view')
+                        <a href="{{ route('receipts.show', $payment->receipt) }}" class="btn btn-sm btn-light">
+                            <i class="bi bi-eye me-1"></i>Open
+                        </a>
+                    @endcan
+                    @if ($payment->receipt->status === 'active')
+                        @can('receipts.print')
+                            <a href="{{ route('receipts.thermal-print', $payment->receipt) }}" target="_blank" class="btn btn-sm btn-light">
+                                <i class="bi bi-printer me-1"></i>Thermal
+                            </a>
+                        @endcan
+                        @can('receipts.pdf')
+                            <a href="{{ route('receipts.pdf', $payment->receipt) }}" class="btn btn-sm btn-light">
+                                <i class="bi bi-filetype-pdf me-1"></i>PDF
+                            </a>
+                        @endcan
+                    @endif
+                </div>
+            @endif
         </div>
 
         <div class="detail-panel">

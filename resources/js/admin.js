@@ -724,6 +724,60 @@ if (paymentsTableElement && window.jQuery?.fn?.DataTable) {
     });
 }
 
+const receiptsTableElement = document.getElementById('receipts-table');
+let receiptsTable = null;
+
+if (receiptsTableElement && window.jQuery?.fn?.DataTable) {
+    const formatReceiptMoney = (value) => `Rs. ${Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    receiptsTable = window.jQuery(receiptsTableElement).DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: receiptsTableElement.dataset.source,
+            data: (payload) => {
+                payload.customer_id = document.getElementById('receipt-customer-filter')?.value || '';
+                payload.enrollment_id = document.getElementById('receipt-enrollment-filter')?.value || '';
+                payload.payment_mode_id = document.getElementById('receipt-mode-filter')?.value || '';
+                payload.staff_id = document.getElementById('receipt-staff-filter')?.value || '';
+                payload.branch_id = document.getElementById('receipt-branch-filter')?.value || '';
+                payload.status = document.getElementById('receipt-status-filter')?.value || '';
+                payload.from_date = document.getElementById('receipt-from-filter')?.value || '';
+                payload.to_date = document.getElementById('receipt-to-filter')?.value || '';
+            },
+        },
+        order: [[4, 'desc']],
+        columns: [
+            { data: 'receipt_no', name: 'receipt_no' },
+            { data: 'customer_name', name: 'customer.name' },
+            { data: 'chit_no', name: 'enrollment.chit_no' },
+            { data: 'payment_no', name: 'payment.payment_no' },
+            { data: 'receipt_date', name: 'receipt_date' },
+            { data: 'payment_mode_name', name: 'payment.paymentMode.name' },
+            { data: 'amount', name: 'amount', className: 'text-end', render: formatReceiptMoney },
+            { data: 'staff_name', name: 'payment.staff.name' },
+            { data: 'status_badge', name: 'status', orderable: true, searchable: false },
+            { data: 'print_count', name: 'print_count', className: 'text-end' },
+            { data: 'actions', name: 'actions', orderable: false, searchable: false, className: 'text-end' },
+        ],
+    });
+
+    [
+        'receipt-customer-filter',
+        'receipt-enrollment-filter',
+        'receipt-mode-filter',
+        'receipt-staff-filter',
+        'receipt-branch-filter',
+        'receipt-status-filter',
+        'receipt-from-filter',
+        'receipt-to-filter',
+    ].forEach((id) => {
+        document.getElementById(id)?.addEventListener('change', () => {
+            receiptsTable?.ajax.reload();
+        });
+    });
+}
+
 document.addEventListener('click', async (event) => {
     const button = event.target.closest('[data-customer-action]');
 
@@ -990,6 +1044,72 @@ document.addEventListener('click', async (event) => {
 
         if (paymentsTable) {
             paymentsTable.ajax.reload(null, false);
+        } else if (payload.data?.redirect) {
+            window.location.href = payload.data.redirect;
+        } else {
+            window.location.reload();
+        }
+    } catch (error) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Action needed',
+            text: error.message,
+        });
+    }
+});
+
+document.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-receipt-action]');
+
+    if (!button) {
+        return;
+    }
+
+    const action = button.dataset.receiptAction;
+    const isCancel = action === 'cancel';
+
+    const result = await Swal.fire({
+        icon: isCancel ? 'warning' : 'question',
+        title: isCancel ? 'Cancel receipt?' : 'Send WhatsApp receipt?',
+        text: isCancel ? 'This cancels only the receipt. Payment cancellation must be done from the payment flow.' : 'The current implementation records a WhatsApp sharing placeholder.',
+        input: isCancel ? 'textarea' : undefined,
+        inputPlaceholder: isCancel ? 'Cancellation reason' : undefined,
+        showCancelButton: true,
+        confirmButtonText: isCancel ? 'Cancel Receipt' : 'Send',
+        confirmButtonColor: isCancel ? '#dc3545' : '#198754',
+    });
+
+    if (!result.isConfirmed) {
+        return;
+    }
+
+    try {
+        const response = await fetch(button.dataset.url, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            body: JSON.stringify(isCancel ? { cancellation_reason: result.value || '' } : {}),
+        });
+        const payload = await response.json();
+
+        if (!response.ok || !payload.success) {
+            const firstError = payload.data?.errors ? Object.values(payload.data.errors).flat()[0] : null;
+            throw new Error(firstError || payload.message || 'Unable to process receipt');
+        }
+
+        await Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: payload.message,
+            timer: 1800,
+            showConfirmButton: false,
+        });
+
+        if (receiptsTable) {
+            receiptsTable.ajax.reload(null, false);
         } else if (payload.data?.redirect) {
             window.location.href = payload.data.redirect;
         } else {

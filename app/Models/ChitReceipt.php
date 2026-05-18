@@ -25,6 +25,7 @@ class ChitReceipt extends Model
         'status',
         'cancelled_by',
         'cancelled_at',
+        'cancellation_reason',
     ];
 
     protected $appends = [
@@ -54,6 +55,11 @@ class ChitReceipt extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function canceller(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cancelled_by');
     }
 
     protected function formattedReceiptNo(): Attribute

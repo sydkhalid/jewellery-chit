@@ -63,10 +63,9 @@
             'title' => 'Receipts',
             'icon' => 'bi-receipt',
             'permissions' => ['receipts.view', 'receipts.print', 'receipts.pdf', 'receipts.duplicate', 'receipts.cancel', 'receipts.whatsapp'],
+            'active' => request()->routeIs('receipts.*'),
             'children' => [
-                ['title' => 'Receipt Register', 'permission' => 'receipts.view'],
-                ['title' => 'Print Receipts', 'permission' => 'receipts.print'],
-                ['title' => 'Receipt PDFs', 'permission' => 'receipts.pdf'],
+                ['title' => 'Receipt List', 'permission' => 'receipts.view', 'route' => route('receipts.index'), 'active' => request()->routeIs('receipts.*')],
             ],
         ],
         [

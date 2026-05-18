@@ -22,7 +22,8 @@ use Illuminate\Validation\ValidationException;
 class PaymentService
 {
     public function __construct(
-        private readonly PaymentRepository $payments
+        private readonly PaymentRepository $payments,
+        private readonly ReceiptService $receiptService
     ) {
     }
 
@@ -224,15 +225,7 @@ class PaymentService
 
     public function createReceipt(ChitPayment $payment): ChitReceipt
     {
-        return ChitReceipt::create([
-            'receipt_no' => $this->generateReceiptNumber(),
-            'payment_id' => $payment->id,
-            'enrollment_id' => $payment->enrollment_id,
-            'customer_id' => $payment->customer_id,
-            'receipt_date' => $payment->payment_date,
-            'amount' => $payment->total_amount,
-            'status' => 'active',
-        ]);
+        return $this->receiptService->generateReceipt($payment);
     }
 
     /**
@@ -257,6 +250,8 @@ class PaymentService
                     'status' => 'cancelled',
                     'cancelled_by' => Auth::id(),
                     'cancelled_at' => now(),
+                    'cancellation_reason' => $data['cancellation_reason'],
+                    'pdf_path' => null,
                 ]);
             }
 
@@ -437,9 +432,11 @@ class PaymentService
                 'customer_id' => $payment->customer_id,
                 'receipt_date' => $payment->payment_date,
                 'amount' => $payment->total_amount,
+                'pdf_path' => null,
                 'status' => 'active',
                 'cancelled_by' => null,
                 'cancelled_at' => null,
+                'cancellation_reason' => null,
             ]);
 
             $payment->load(['customer', 'enrollment.scheme', 'paymentMode', 'branch', 'staff', 'receipt', 'allocations.installment']);
@@ -603,19 +600,6 @@ class PaymentService
         }
 
         return $installment->due_date && $installment->due_date->lt(today()) ? 'overdue' : 'pending';
-    }
-
-    private function generateReceiptNumber(): string
-    {
-        $prefix = (string) ShopSetting::getByKey('receipt_prefix', 'RCPT');
-        $nextId = (int) ChitReceipt::withTrashed()->max('id') + 1;
-
-        do {
-            $number = $prefix.str_pad((string) $nextId, 6, '0', STR_PAD_LEFT);
-            $nextId++;
-        } while (ChitReceipt::withTrashed()->where('receipt_no', $number)->exists());
-
-        return $number;
     }
 
     private function validateTransactionReference(PaymentMode $paymentMode, mixed $transactionId): void

@@ -8,6 +8,7 @@ use App\Http\Controllers\Web\CustomerController;
 use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\InstallmentController;
 use App\Http\Controllers\Web\PaymentController;
+use App\Http\Controllers\Web\ReceiptController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/login');
@@ -26,6 +27,34 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
     ->name('dashboard');
 
 Route::middleware(['auth', 'verified', 'role:Admin|Manager|Staff'])->group(function () {
+    Route::get('/receipts', [ReceiptController::class, 'index'])
+        ->middleware('permission:receipts.view')
+        ->name('receipts.index');
+    Route::get('/receipts/data', [ReceiptController::class, 'data'])
+        ->middleware('permission:receipts.view')
+        ->name('receipts.data');
+    Route::get('/receipts/{receipt}', [ReceiptController::class, 'show'])
+        ->middleware('permission:receipts.view')
+        ->name('receipts.show');
+    Route::get('/receipts/{receipt}/thermal-print', [ReceiptController::class, 'printThermal'])
+        ->middleware('permission:receipts.print')
+        ->name('receipts.thermal-print');
+    Route::get('/receipts/{receipt}/a4-print', [ReceiptController::class, 'printA4'])
+        ->middleware('permission:receipts.print')
+        ->name('receipts.a4-print');
+    Route::get('/receipts/{receipt}/pdf', [ReceiptController::class, 'downloadPdf'])
+        ->middleware('permission:receipts.pdf')
+        ->name('receipts.pdf');
+    Route::get('/receipts/{receipt}/duplicate', [ReceiptController::class, 'duplicate'])
+        ->middleware('permission:receipts.duplicate')
+        ->name('receipts.duplicate');
+    Route::post('/receipts/{receipt}/cancel', [ReceiptController::class, 'cancel'])
+        ->middleware('permission:receipts.cancel')
+        ->name('receipts.cancel');
+    Route::post('/receipts/{receipt}/whatsapp', [ReceiptController::class, 'whatsapp'])
+        ->middleware('permission:receipts.whatsapp')
+        ->name('receipts.whatsapp');
+
     Route::get('/payments', [PaymentController::class, 'index'])
         ->middleware('permission:payments.view')
         ->name('payments.index');

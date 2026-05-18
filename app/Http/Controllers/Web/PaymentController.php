@@ -167,7 +167,9 @@ class PaymentController extends Controller
 
         if ($user?->can('payments.view')) {
             $buttons[] = '<a class="btn btn-sm btn-light" href="'.route('payments.show', $payment).'" title="View"><i class="bi bi-eye"></i></a>';
-            $buttons[] = '<a class="btn btn-sm btn-light" href="'.route('payments.show', $payment).'#receipt" title="Receipt"><i class="bi bi-receipt"></i></a>';
+            if ($payment->receipt && $user?->can('receipts.view')) {
+                $buttons[] = '<a class="btn btn-sm btn-light" href="'.route('receipts.show', $payment->receipt).'" title="Receipt"><i class="bi bi-receipt"></i></a>';
+            }
         }
 
         if ($payment->status === 'success' && $user?->can('payments.edit')) {

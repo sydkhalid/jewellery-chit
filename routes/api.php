@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\ChitSchemeController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\InstallmentController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\ReceiptController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
@@ -37,4 +38,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/payments', [PaymentController::class, 'index'])->middleware('can:payments.view');
     Route::post('/payments', [PaymentController::class, 'store'])->middleware('can:payments.create');
     Route::get('/payments/{payment}', [PaymentController::class, 'show'])->middleware('can:payments.view');
+
+    Route::get('/receipts', [ReceiptController::class, 'index'])->middleware('can:receipts.view');
+    Route::get('/receipts/{receipt}', [ReceiptController::class, 'show'])->middleware('can:receipts.view');
+    Route::get('/receipts/{receipt}/download', [ReceiptController::class, 'download'])->middleware('can:receipts.pdf');
 });
