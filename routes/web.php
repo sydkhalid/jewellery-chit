@@ -18,6 +18,7 @@ use App\Http\Controllers\Web\PaymentController;
 use App\Http\Controllers\Web\PendingDueController;
 use App\Http\Controllers\Web\ReceiptController;
 use App\Http\Controllers\Web\ReportController;
+use App\Http\Controllers\Web\SettingController;
 use App\Http\Controllers\Web\SmsLogController;
 use App\Http\Controllers\Web\StaffCashHandoverController;
 use App\Http\Controllers\Web\StaffController;
@@ -40,6 +41,28 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
     ->name('dashboard');
 
 Route::middleware(['auth', 'verified', 'role:Admin|Manager|Staff'])->group(function () {
+    Route::get('/settings', [SettingController::class, 'index'])
+        ->middleware('permission:settings.view')
+        ->name('settings.index');
+    Route::post('/settings/update', [SettingController::class, 'update'])
+        ->middleware(['permission:settings.edit', 'role:Admin|Manager'])
+        ->name('settings.update');
+    Route::get('/settings/shop', [SettingController::class, 'shop'])
+        ->middleware('permission:settings.view')
+        ->name('settings.shop');
+    Route::get('/settings/receipt', [SettingController::class, 'receipt'])
+        ->middleware('permission:settings.view')
+        ->name('settings.receipt');
+    Route::get('/settings/chit', [SettingController::class, 'chit'])
+        ->middleware('permission:settings.view')
+        ->name('settings.chit');
+    Route::get('/settings/message', [SettingController::class, 'message'])
+        ->middleware('permission:settings.view')
+        ->name('settings.message');
+    Route::get('/settings/backup', [SettingController::class, 'backup'])
+        ->middleware('permission:settings.backup')
+        ->name('settings.backup');
+
     Route::get('/messages', [NotificationController::class, 'index'])
         ->middleware('permission:messages.view')
         ->name('messages.index');

@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PendingDueController;
 use App\Http\Controllers\Api\ReceiptController;
 use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\StaffCashHandoverController;
 use App\Http\Controllers\Api\StaffController;
 use Illuminate\Support\Facades\Route;
@@ -31,6 +32,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/messages/notifications', [MessageController::class, 'notifications'])->middleware('can:messages.view');
     Route::get('/messages/whatsapp-logs', [MessageController::class, 'whatsappLogs'])->middleware('can:messages.logs');
     Route::get('/messages/sms-logs', [MessageController::class, 'smsLogs'])->middleware('can:messages.logs');
+
+    Route::get('/settings', [SettingController::class, 'index'])->middleware('can:settings.view');
+    Route::get('/settings/{key}', [SettingController::class, 'show'])->middleware('can:settings.view');
 
     Route::get('/cashbooks', [CashbookController::class, 'index'])->middleware('can:cashbook.view');
     Route::get('/cashbooks/daily-summary', [CashbookController::class, 'dailySummary'])->middleware('can:cashbook.view');
