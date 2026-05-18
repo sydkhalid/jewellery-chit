@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Http\Resources\ChitClosureResource;
 use App\Models\ChitClosure;
 use App\Models\ChitEnrollment;
@@ -11,7 +10,7 @@ use App\Services\MaturityClosingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class MaturityClosingController extends Controller
+class MaturityClosingController extends BaseApiController
 {
     public function __construct(
         private readonly MaturityClosingRepository $closings,

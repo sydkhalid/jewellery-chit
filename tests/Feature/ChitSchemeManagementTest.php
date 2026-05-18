@@ -220,8 +220,8 @@ class ChitSchemeManagementTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('message', 'Schemes fetched successfully')
-            ->assertJsonPath('data.schemes.0.scheme_code', $activeScheme->scheme_code)
-            ->assertJsonCount(1, 'data.schemes');
+            ->assertJsonPath('data.0.scheme_code', $activeScheme->scheme_code)
+            ->assertJsonCount(1, 'data');
     }
 
     public function test_api_scheme_detail_works(): void

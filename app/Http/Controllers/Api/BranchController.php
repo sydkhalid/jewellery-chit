@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Http\Resources\BranchResource;
 use App\Models\Branch;
 use App\Repositories\BranchRepository;
@@ -10,7 +9,7 @@ use App\Services\StaffBranchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class BranchController extends Controller
+class BranchController extends BaseApiController
 {
     public function __construct(
         private readonly BranchRepository $branches,

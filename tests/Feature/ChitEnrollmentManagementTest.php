@@ -267,7 +267,7 @@ class ChitEnrollmentManagementTest extends TestCase
             ->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('message', 'Enrollments fetched successfully')
-            ->assertJsonPath('data.enrollments.0.chit_no', $enrollment->chit_no);
+            ->assertJsonPath('data.0.chit_no', $enrollment->chit_no);
 
         $this->getJson('/api/chit-enrollments/'.$enrollment->id)
             ->assertOk()

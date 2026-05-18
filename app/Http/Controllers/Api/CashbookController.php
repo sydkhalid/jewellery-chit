@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Http\Resources\CashbookResource;
 use App\Models\Cashbook;
 use App\Repositories\CashbookRepository;
@@ -10,7 +9,7 @@ use App\Services\CashflowService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class CashbookController extends Controller
+class CashbookController extends BaseApiController
 {
     public function __construct(
         private readonly CashbookRepository $cashbooks,

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Http\Resources\ChitReceiptResource;
 use App\Models\ChitReceipt;
 use App\Repositories\ReceiptRepository;
@@ -13,7 +12,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
-class ReceiptController extends Controller
+class ReceiptController extends BaseApiController
 {
     public function __construct(
         private readonly ReceiptRepository $receipts,

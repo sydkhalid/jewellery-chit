@@ -2,12 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Services\ReportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class ReportController extends Controller
+class ReportController extends BaseApiController
 {
     public function __construct(
         private readonly ReportService $reports

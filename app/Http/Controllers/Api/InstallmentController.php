@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Http\Resources\ChitEnrollmentResource;
 use App\Http\Resources\ChitInstallmentResource;
 use App\Models\ChitEnrollment;
@@ -11,7 +10,7 @@ use App\Services\InstallmentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class InstallmentController extends Controller
+class InstallmentController extends BaseApiController
 {
     public function __construct(
         private readonly InstallmentRepository $installments,

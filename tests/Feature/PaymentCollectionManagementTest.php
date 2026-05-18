@@ -272,7 +272,7 @@ class PaymentCollectionManagementTest extends TestCase
             ->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('message', 'Payments fetched successfully')
-            ->assertJsonPath('data.payments.0.payment_no', $payment->payment_no);
+            ->assertJsonPath('data.0.payment_no', $payment->payment_no);
 
         $this->getJson('/api/payments/'.$payment->id)
             ->assertOk()

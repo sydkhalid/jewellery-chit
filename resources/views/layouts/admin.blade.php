@@ -18,6 +18,12 @@
                 @include('partials.header')
 
                 <main class="admin-content">
+                    <nav class="admin-breadcrumbs" aria-label="Breadcrumb">
+                        <span>@yield('page-eyebrow', 'Jewellery Chit')</span>
+                        <span>/</span>
+                        <span>@yield('page-title', 'Dashboard')</span>
+                    </nav>
+
                     @yield('content')
                 </main>
 

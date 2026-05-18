@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Http\Requests\PaymentStoreRequest;
 use App\Http\Resources\ChitPaymentResource;
 use App\Models\ChitPayment;
@@ -12,7 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
-class PaymentController extends Controller
+class PaymentController extends BaseApiController
 {
     public function __construct(
         private readonly PaymentRepository $payments,

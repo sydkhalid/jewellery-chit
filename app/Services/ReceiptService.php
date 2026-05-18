@@ -167,8 +167,12 @@ class ReceiptService
             'placeholder' => true,
         ]);
 
+        $status = ($share['provider_response']['provider'] ?? null) === 'placeholder'
+            ? 'placeholder'
+            : $share['status'];
+
         return [
-            'status' => $share['status'],
+            'status' => $status,
             'mobile' => $receipt->customer?->mobile,
             'message' => $share['message'],
             'message_log_id' => $share['log']->id ?? null,

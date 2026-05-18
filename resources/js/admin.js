@@ -2997,3 +2997,130 @@ document.addEventListener('click', async (event) => {
         });
     }
 });
+
+const initLogTable = (tableId, filters, columns) => {
+    const tableElement = document.getElementById(tableId);
+
+    if (!tableElement || !window.jQuery?.fn?.DataTable) {
+        return null;
+    }
+
+    const table = window.jQuery(tableElement).DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: tableElement.dataset.source,
+            data: (payload) => {
+                filters.forEach(({ key, selector }) => {
+                    payload[key] = document.querySelector(selector)?.value || '';
+                });
+            },
+        },
+        order: [[0, 'desc']],
+        columns,
+    });
+
+    filters.forEach(({ selector }) => {
+        document.querySelector(selector)?.addEventListener('change', () => table.ajax.reload());
+    });
+
+    return table;
+};
+
+initLogTable('audit-logs-table', [
+    { key: 'user_id', selector: '#audit-user-filter' },
+    { key: 'module', selector: '#audit-module-filter' },
+    { key: 'event', selector: '#audit-event-filter' },
+    { key: 'from_date', selector: '#audit-from-filter' },
+    { key: 'to_date', selector: '#audit-to-filter' },
+], [
+    { data: 'created_at', name: 'created_at' },
+    { data: 'user_name', name: 'user.name' },
+    { data: 'module_name', name: 'auditable_type' },
+    { data: 'event', name: 'event' },
+    { data: 'ip_address', name: 'ip_address', defaultContent: '-' },
+    { data: 'user_agent', name: 'user_agent', defaultContent: '-', className: 'text-truncate log-user-agent' },
+    { data: 'actions', name: 'actions', orderable: false, searchable: false, className: 'text-end' },
+]);
+
+initLogTable('activity-logs-table', [
+    { key: 'user_id', selector: '#activity-user-filter' },
+    { key: 'module', selector: '#activity-module-filter' },
+    { key: 'action', selector: '#activity-action-filter' },
+    { key: 'from_date', selector: '#activity-from-filter' },
+    { key: 'to_date', selector: '#activity-to-filter' },
+], [
+    { data: 'created_at', name: 'created_at' },
+    { data: 'user_name', name: 'user.name' },
+    { data: 'module_name', name: 'module' },
+    { data: 'action', name: 'action' },
+    { data: 'description', name: 'description', defaultContent: '-' },
+    { data: 'ip_address', name: 'ip_address', defaultContent: '-' },
+    { data: 'user_agent', name: 'user_agent', defaultContent: '-', className: 'text-truncate log-user-agent' },
+    { data: 'actions', name: 'actions', orderable: false, searchable: false, className: 'text-end' },
+]);
+
+document.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-backup-action]');
+
+    if (!button) {
+        return;
+    }
+
+    const action = button.dataset.backupAction;
+    const isDelete = action === 'delete';
+    const result = await Swal.fire({
+        icon: isDelete ? 'warning' : 'question',
+        title: isDelete ? 'Delete backup?' : 'Create backup?',
+        text: isDelete ? 'This removes the selected archive from the configured backup disk.' : 'A database backup will be created on the configured disk.',
+        showCancelButton: true,
+        confirmButtonText: isDelete ? 'Delete' : 'Create',
+        confirmButtonColor: isDelete ? '#dc3545' : '#198754',
+    });
+
+    if (!result.isConfirmed) {
+        return;
+    }
+
+    button.setAttribute('disabled', 'disabled');
+
+    try {
+        const formData = new FormData();
+
+        if (isDelete) {
+            formData.append('_method', 'DELETE');
+        }
+
+        const response = await fetch(button.dataset.url, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            body: formData,
+        });
+        const payload = await response.json();
+
+        if (!response.ok || !payload.success) {
+            throw new Error(payload.message || 'Unable to process backup request');
+        }
+
+        await Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: payload.message,
+            timer: 1800,
+            showConfirmButton: false,
+        });
+
+        window.location.reload();
+    } catch (error) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Action needed',
+            text: error.message,
+        });
+    } finally {
+        button.removeAttribute('disabled');
+    }
+});

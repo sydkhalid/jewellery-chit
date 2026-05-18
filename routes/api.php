@@ -26,6 +26,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
+    Route::get('/profile', [AuthController::class, 'profile']);
 
     Route::post('/messages/whatsapp', [MessageController::class, 'whatsapp'])->middleware('can:messages.send');
     Route::post('/messages/sms', [MessageController::class, 'sms'])->middleware('can:messages.send');

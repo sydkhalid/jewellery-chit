@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Http\Requests\StaffCashHandoverStoreRequest;
 use App\Http\Resources\StaffCashHandoverResource;
 use App\Models\StaffCashHandover;
@@ -12,7 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
-class StaffCashHandoverController extends Controller
+class StaffCashHandoverController extends BaseApiController
 {
     public function __construct(
         private readonly StaffCashHandoverRepository $handovers,

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Http\Requests\JewelleryInvoiceStoreRequest;
 use App\Http\Resources\JewelleryInvoiceResource;
 use App\Models\JewelleryInvoice;
@@ -12,7 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
-class JewelleryInvoiceController extends Controller
+class JewelleryInvoiceController extends BaseApiController
 {
     public function __construct(
         private readonly JewelleryInvoiceRepository $invoices,

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Http\Requests\CustomerDocumentRequest;
 use App\Http\Requests\CustomerStoreRequest;
 use App\Http\Requests\CustomerUpdateRequest;
@@ -14,7 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
-class CustomerController extends Controller
+class CustomerController extends BaseApiController
 {
     public function __construct(
         private readonly CustomerRepository $customers,
@@ -32,56 +31,32 @@ class CustomerController extends Controller
             ->latest()
             ->paginate($perPage);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Customers fetched successfully',
-            'data' => [
-                'customers' => CustomerResource::collection($customers->getCollection()),
-                'pagination' => [
-                    'current_page' => $customers->currentPage(),
-                    'last_page' => $customers->lastPage(),
-                    'per_page' => $customers->perPage(),
-                    'total' => $customers->total(),
-                ],
-            ],
-        ]);
+        return $this->sendPaginated($customers, CustomerResource::class, 'Customers fetched successfully');
     }
 
     public function store(CustomerStoreRequest $request): JsonResponse
     {
         $customer = $this->customerService->createCustomer($request->validated());
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Customer created successfully',
-            'data' => [
-                'customer' => new CustomerResource($customer->loadMissing('nominee')),
-            ],
-        ], 201);
+        return $this->sendSuccess([
+            'customer' => new CustomerResource($customer->loadMissing('nominee')),
+        ], 'Customer created successfully', 201);
     }
 
     public function show(Customer $customer): JsonResponse
     {
-        return response()->json([
-            'success' => true,
-            'message' => 'Customer fetched successfully',
-            'data' => [
-                'customer' => new CustomerResource($customer->load(['nominee', 'documents'])->loadCount(['documents', 'enrollments'])),
-            ],
-        ]);
+        return $this->sendSuccess([
+            'customer' => new CustomerResource($customer->load(['nominee', 'documents'])->loadCount(['documents', 'enrollments'])),
+        ], 'Customer fetched successfully');
     }
 
     public function update(CustomerUpdateRequest $request, Customer $customer): JsonResponse
     {
         $customer = $this->customerService->updateCustomer($customer, $request->validated());
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Customer updated successfully',
-            'data' => [
-                'customer' => new CustomerResource($customer->loadMissing('nominee')),
-            ],
-        ]);
+        return $this->sendSuccess([
+            'customer' => new CustomerResource($customer->loadMissing('nominee')),
+        ], 'Customer updated successfully');
     }
 
     public function destroy(Customer $customer): JsonResponse
@@ -89,59 +64,33 @@ class CustomerController extends Controller
         try {
             $this->customerService->deleteCustomer($customer);
         } catch (ValidationException $exception) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'data' => [
-                    'errors' => $exception->errors(),
-                ],
-            ], 422);
+            return $this->sendValidationError($exception);
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Customer deleted successfully',
-            'data' => [],
-        ]);
+        return $this->sendSuccess([], 'Customer deleted successfully');
     }
 
     public function uploadDocument(CustomerDocumentRequest $request, Customer $customer): JsonResponse
     {
         $document = $this->customerService->uploadCustomerDocument($customer, $request->validated());
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Customer document uploaded successfully',
-            'data' => [
-                'document' => $document,
-            ],
-        ], 201);
+        return $this->sendSuccess([
+            'document' => $document,
+        ], 'Customer document uploaded successfully', 201);
     }
 
     public function ledger(Customer $customer): JsonResponse
     {
-        return response()->json([
-            'success' => true,
-            'message' => 'Customer ledger fetched successfully',
-            'data' => $this->customerService->getCustomerLedger($customer),
-        ]);
+        return $this->sendSuccess($this->customerService->getCustomerLedger($customer), 'Customer ledger fetched successfully');
     }
 
     public function paymentHistory(Customer $customer): JsonResponse
     {
-        return response()->json([
-            'success' => true,
-            'message' => 'Customer payment history fetched successfully',
-            'data' => $this->customerService->getCustomerPaymentHistory($customer),
-        ]);
+        return $this->sendSuccess($this->customerService->getCustomerPaymentHistory($customer), 'Customer payment history fetched successfully');
     }
 
     public function outstanding(Customer $customer): JsonResponse
     {
-        return response()->json([
-            'success' => true,
-            'message' => 'Customer outstanding fetched successfully',
-            'data' => $this->customerService->getCustomerOutstanding($customer),
-        ]);
+        return $this->sendSuccess($this->customerService->getCustomerOutstanding($customer), 'Customer outstanding fetched successfully');
     }
 }

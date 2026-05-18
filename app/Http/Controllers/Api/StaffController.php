@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Http\Resources\StaffResource;
 use App\Models\User;
 use App\Repositories\StaffRepository;
@@ -10,7 +9,7 @@ use App\Services\StaffBranchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class StaffController extends Controller
+class StaffController extends BaseApiController
 {
     public function __construct(
         private readonly StaffRepository $staffRepository,

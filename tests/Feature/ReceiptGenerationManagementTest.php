@@ -141,7 +141,7 @@ class ReceiptGenerationManagementTest extends TestCase
             ->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('message', 'Receipts fetched successfully')
-            ->assertJsonPath('data.receipts.0.receipt_no', $receipt->receipt_no);
+            ->assertJsonPath('data.0.receipt_no', $receipt->receipt_no);
 
         $this->getJson('/api/receipts/'.$receipt->id)
             ->assertOk()

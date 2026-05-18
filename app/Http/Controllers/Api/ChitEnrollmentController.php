@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Http\Requests\ChitEnrollmentStoreRequest;
 use App\Http\Resources\ChitEnrollmentResource;
 use App\Models\ChitEnrollment;
@@ -12,7 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
-class ChitEnrollmentController extends Controller
+class ChitEnrollmentController extends BaseApiController
 {
     public function __construct(
         private readonly ChitEnrollmentRepository $enrollments,

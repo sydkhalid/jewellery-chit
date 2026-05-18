@@ -2,14 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Http\Resources\ChitSchemeResource;
 use App\Models\ChitScheme;
 use App\Repositories\ChitSchemeRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class ChitSchemeController extends Controller
+class ChitSchemeController extends BaseApiController
 {
     public function __construct(
         private readonly ChitSchemeRepository $schemes

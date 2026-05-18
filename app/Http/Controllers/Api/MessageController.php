@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Http\Resources\NotificationResource;
 use App\Http\Resources\SmsLogResource;
 use App\Http\Resources\WhatsappLogResource;
@@ -11,7 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
-class MessageController extends Controller
+class MessageController extends BaseApiController
 {
     public function __construct(
         private readonly MessageService $messageService

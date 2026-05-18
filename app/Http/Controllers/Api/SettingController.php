@@ -2,13 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Http\Resources\ShopSettingResource;
 use App\Models\ShopSetting;
 use App\Services\SettingService;
 use Illuminate\Http\JsonResponse;
 
-class SettingController extends Controller
+class SettingController extends BaseApiController
 {
     public function __construct(
         private readonly SettingService $settings

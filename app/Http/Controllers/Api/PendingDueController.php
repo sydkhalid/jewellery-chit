@@ -2,13 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Http\Resources\PendingDueResource;
 use App\Services\PendingDueService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class PendingDueController extends Controller
+class PendingDueController extends BaseApiController
 {
     public function __construct(
         private readonly PendingDueService $pendingDueService

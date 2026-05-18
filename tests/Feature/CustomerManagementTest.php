@@ -236,7 +236,7 @@ class CustomerManagementTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('message', 'Customers fetched successfully')
-            ->assertJsonPath('data.customers.0.customer_code', $customer->customer_code);
+            ->assertJsonPath('data.0.customer_code', $customer->customer_code);
     }
 
     public function test_api_customer_create_works(): void

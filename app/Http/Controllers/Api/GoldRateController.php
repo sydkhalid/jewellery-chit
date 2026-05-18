@@ -2,14 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Http\Resources\GoldRateResource;
 use App\Models\GoldRate;
 use App\Services\GoldRateService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class GoldRateController extends Controller
+class GoldRateController extends BaseApiController
 {
     public function __construct(
         private readonly GoldRateService $goldRateService

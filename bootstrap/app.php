@@ -12,6 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->api(append: [
+            \App\Http\Middleware\StandardizeApiResponse::class,
+        ]);
+
         $middleware->alias([
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
@@ -19,5 +23,35 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (\Illuminate\Validation\ValidationException $exception, \Illuminate\Http\Request $request) {
+            if ($request->is('api/*')) {
+                return \App\Helpers\ApiResponse::validationError($exception->errors());
+            }
+
+            return null;
+        });
+
+        $exceptions->render(function (\Illuminate\Auth\AuthenticationException $exception, \Illuminate\Http\Request $request) {
+            if ($request->is('api/*')) {
+                return \App\Helpers\ApiResponse::unauthorized();
+            }
+
+            return null;
+        });
+
+        $exceptions->render(function (\Illuminate\Auth\Access\AuthorizationException $exception, \Illuminate\Http\Request $request) {
+            if ($request->is('api/*')) {
+                return \App\Helpers\ApiResponse::forbidden();
+            }
+
+            return null;
+        });
+
+        $exceptions->render(function (\Illuminate\Database\Eloquent\ModelNotFoundException $exception, \Illuminate\Http\Request $request) {
+            if ($request->is('api/*')) {
+                return \App\Helpers\ApiResponse::notFound();
+            }
+
+            return null;
+        });
     })->create();

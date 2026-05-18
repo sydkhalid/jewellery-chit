@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Http\Resources\ChitLedgerResource;
 use App\Models\ChitEnrollment;
 use App\Models\Customer;
@@ -11,7 +10,7 @@ use App\Services\LedgerService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class LedgerController extends Controller
+class LedgerController extends BaseApiController
 {
     public function __construct(
         private readonly LedgerRepository $ledgers,

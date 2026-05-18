@@ -106,7 +106,7 @@ class AuthenticationTest extends TestCase
         $response->assertForbidden()
             ->assertJsonPath('success', false)
             ->assertJsonPath('message', 'User does not have access to this application')
-            ->assertJsonPath('data', []);
+            ->assertJsonPath('errors', []);
     }
 
     public function test_api_user_route_requires_sanctum_token(): void

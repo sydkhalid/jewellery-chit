@@ -214,7 +214,7 @@ class InstallmentScheduleManagementTest extends TestCase
             ->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('message', 'Installments fetched successfully')
-            ->assertJsonPath('data.installments.0.enrollment.chit_no', $enrollment->chit_no);
+            ->assertJsonPath('data.0.enrollment.chit_no', $enrollment->chit_no);
 
         $this->getJson('/api/chit-enrollments/'.$enrollment->id.'/installments')
             ->assertOk()

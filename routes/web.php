@@ -1,7 +1,10 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Web\ActivityLogController;
+use App\Http\Controllers\Web\AuditLogController;
 use App\Http\Controllers\Web\AuthController as WebAuthController;
+use App\Http\Controllers\Web\BackupController;
 use App\Http\Controllers\Web\BranchController;
 use App\Http\Controllers\Web\CashbookController;
 use App\Http\Controllers\Web\ChitEnrollmentController;
@@ -62,6 +65,39 @@ Route::middleware(['auth', 'verified', 'role:Admin|Manager|Staff'])->group(funct
     Route::get('/settings/backup', [SettingController::class, 'backup'])
         ->middleware('permission:settings.backup')
         ->name('settings.backup');
+
+    Route::get('/backups', [BackupController::class, 'index'])
+        ->middleware('permission:backup.view')
+        ->name('backups.index');
+    Route::post('/backups/create', [BackupController::class, 'create'])
+        ->middleware('permission:backup.create')
+        ->name('backups.create');
+    Route::get('/backups/{backup}/download', [BackupController::class, 'download'])
+        ->middleware('permission:backup.download')
+        ->name('backups.download');
+    Route::delete('/backups/{backup}', [BackupController::class, 'delete'])
+        ->middleware('permission:backup.delete')
+        ->name('backups.delete');
+
+    Route::get('/audit-logs', [AuditLogController::class, 'index'])
+        ->middleware('permission:audit_logs.view')
+        ->name('audit-logs.index');
+    Route::get('/audit-logs/data', [AuditLogController::class, 'data'])
+        ->middleware('permission:audit_logs.view')
+        ->name('audit-logs.data');
+    Route::get('/audit-logs/{auditLog}', [AuditLogController::class, 'show'])
+        ->middleware('permission:audit_logs.view')
+        ->name('audit-logs.show');
+
+    Route::get('/activity-logs', [ActivityLogController::class, 'index'])
+        ->middleware('permission:activity_logs.view')
+        ->name('activity-logs.index');
+    Route::get('/activity-logs/data', [ActivityLogController::class, 'data'])
+        ->middleware('permission:activity_logs.view')
+        ->name('activity-logs.data');
+    Route::get('/activity-logs/{activityLog}', [ActivityLogController::class, 'show'])
+        ->middleware('permission:activity_logs.view')
+        ->name('activity-logs.show');
 
     Route::get('/messages', [NotificationController::class, 'index'])
         ->middleware('permission:messages.view')
