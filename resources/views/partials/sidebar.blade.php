@@ -72,9 +72,11 @@
             'title' => 'Ledger',
             'icon' => 'bi-journal-text',
             'permissions' => ['ledger.view', 'ledger.customer', 'ledger.chit'],
+            'active' => request()->routeIs('ledgers.*', 'customers.ledger', 'chit-enrollments.ledger*'),
             'children' => [
-                ['title' => 'Customer Ledger', 'permission' => 'ledger.customer'],
-                ['title' => 'Chit Ledger', 'permission' => 'ledger.chit'],
+                ['title' => 'All Ledger', 'permission' => 'ledger.view', 'route' => route('ledgers.index'), 'active' => request()->routeIs('ledgers.*') && ! request('scope')],
+                ['title' => 'Customer Ledger', 'permission' => 'ledger.customer', 'route' => route('ledgers.index', ['scope' => 'customer']), 'active' => request()->routeIs('customers.ledger') || request('scope') === 'customer'],
+                ['title' => 'Chit Ledger', 'permission' => 'ledger.chit', 'route' => route('ledgers.index', ['scope' => 'chit']), 'active' => request()->routeIs('chit-enrollments.ledger*') || request('scope') === 'chit'],
             ],
         ],
         [

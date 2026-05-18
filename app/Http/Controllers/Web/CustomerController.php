@@ -153,7 +153,7 @@ class CustomerController extends Controller
             $buttons[] = '<a class="btn btn-sm btn-light" href="'.route('customers.show', ['customer' => $customer, 'tab' => 'documents']).'#documents" title="Documents"><i class="bi bi-folder2-open"></i></a>';
         }
 
-        if ($user?->can('customers.ledger')) {
+        if ($user?->can('ledger.customer')) {
             $buttons[] = '<a class="btn btn-sm btn-light" href="'.route('customers.ledger', $customer).'" title="Ledger"><i class="bi bi-journal-text"></i></a>';
         }
 

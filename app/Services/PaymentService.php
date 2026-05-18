@@ -23,7 +23,8 @@ class PaymentService
 {
     public function __construct(
         private readonly PaymentRepository $payments,
-        private readonly ReceiptService $receiptService
+        private readonly ReceiptService $receiptService,
+        private readonly LedgerService $ledgerService
     ) {
     }
 
@@ -181,24 +182,11 @@ class PaymentService
 
     public function createLedgerEntry(ChitPayment $payment): ChitLedger
     {
-        $previousBalance = (float) ChitLedger::query()
-            ->where('enrollment_id', $payment->enrollment_id)
-            ->latest('id')
-            ->value('balance');
+        $this->ledgerService->createLateFeeEntry($payment);
 
-        return ChitLedger::create([
-            'enrollment_id' => $payment->enrollment_id,
-            'customer_id' => $payment->customer_id,
-            'transaction_date' => $payment->payment_date,
-            'transaction_type' => 'payment',
-            'debit' => 0,
-            'credit' => $payment->total_amount,
-            'balance' => round($previousBalance + (float) $payment->total_amount, 2),
-            'reference_type' => ChitPayment::class,
-            'reference_id' => $payment->id,
-            'remarks' => "Payment {$payment->payment_no}",
-            'created_by' => Auth::id(),
-        ]);
+        return $payment->payment_type === 'advance'
+            ? $this->ledgerService->createAdvanceEntry($payment)
+            : $this->ledgerService->createPaymentEntry($payment);
     }
 
     public function createCashbookEntry(ChitPayment $payment): Cashbook
@@ -296,19 +284,13 @@ class PaymentService
 
     public function reverseLedgerEntry(ChitPayment $payment): ChitLedger
     {
-        $previousBalance = (float) ChitLedger::query()
-            ->where('enrollment_id', $payment->enrollment_id)
-            ->latest('id')
-            ->value('balance');
-
-        return ChitLedger::create([
+        return $this->ledgerService->createLedgerEntry([
             'enrollment_id' => $payment->enrollment_id,
             'customer_id' => $payment->customer_id,
             'transaction_date' => now()->toDateString(),
             'transaction_type' => 'adjustment',
-            'debit' => $payment->total_amount,
+            'debit' => $payment->amount,
             'credit' => 0,
-            'balance' => round($previousBalance - (float) $payment->total_amount, 2),
             'reference_type' => ChitPayment::class,
             'reference_id' => $payment->id,
             'remarks' => "Payment cancellation {$payment->payment_no}",

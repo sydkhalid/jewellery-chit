@@ -7,6 +7,7 @@ use App\Http\Controllers\Web\ChitSchemeController;
 use App\Http\Controllers\Web\CustomerController;
 use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\InstallmentController;
+use App\Http\Controllers\Web\LedgerController;
 use App\Http\Controllers\Web\PaymentController;
 use App\Http\Controllers\Web\ReceiptController;
 use Illuminate\Support\Facades\Route;
@@ -27,6 +28,13 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
     ->name('dashboard');
 
 Route::middleware(['auth', 'verified', 'role:Admin|Manager|Staff'])->group(function () {
+    Route::get('/ledgers', [LedgerController::class, 'index'])
+        ->middleware('permission:ledger.view')
+        ->name('ledgers.index');
+    Route::get('/ledgers/data', [LedgerController::class, 'data'])
+        ->middleware('permission:ledger.view')
+        ->name('ledgers.data');
+
     Route::get('/receipts', [ReceiptController::class, 'index'])
         ->middleware('permission:receipts.view')
         ->name('receipts.index');
@@ -135,6 +143,12 @@ Route::middleware(['auth', 'verified', 'role:Admin|Manager|Staff'])->group(funct
     Route::post('/chit-enrollments/{enrollment}/installments/regenerate', [InstallmentController::class, 'regenerate'])
         ->middleware('permission:installments.generate')
         ->name('chit-enrollments.installments.regenerate');
+    Route::get('/chit-enrollments/{enrollment}/ledger', [LedgerController::class, 'chit'])
+        ->middleware('permission:ledger.chit')
+        ->name('chit-enrollments.ledger');
+    Route::post('/chit-enrollments/{enrollment}/ledger/rebuild', [LedgerController::class, 'rebuild'])
+        ->middleware(['permission:ledger.chit', 'role:Admin'])
+        ->name('chit-enrollments.ledger.rebuild');
 
     Route::get('/chit-schemes', [ChitSchemeController::class, 'index'])
         ->middleware('permission:schemes.view')
@@ -194,8 +208,8 @@ Route::middleware(['auth', 'verified', 'role:Admin|Manager|Staff'])->group(funct
     Route::post('/customers/{customer}/documents', [CustomerController::class, 'uploadDocument'])
         ->middleware('permission:customers.documents')
         ->name('customers.documents.store');
-    Route::get('/customers/{customer}/ledger', [CustomerController::class, 'ledger'])
-        ->middleware('permission:customers.ledger')
+    Route::get('/customers/{customer}/ledger', [LedgerController::class, 'customer'])
+        ->middleware('permission:ledger.customer')
         ->name('customers.ledger');
     Route::get('/customers/{customer}/payment-history', [CustomerController::class, 'paymentHistory'])
         ->middleware('permission:customers.view')

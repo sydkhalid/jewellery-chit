@@ -778,6 +778,58 @@ if (receiptsTableElement && window.jQuery?.fn?.DataTable) {
     });
 }
 
+const ledgersTableElement = document.getElementById('ledgers-table');
+let ledgersTable = null;
+
+if (ledgersTableElement && window.jQuery?.fn?.DataTable) {
+    const formatLedgerMoney = (value) => `Rs. ${Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    ledgersTable = window.jQuery(ledgersTableElement).DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: ledgersTableElement.dataset.source,
+            data: (payload) => {
+                payload.customer_id = document.getElementById('ledger-customer-filter')?.value || '';
+                payload.enrollment_id = document.getElementById('ledger-enrollment-filter')?.value || '';
+                payload.transaction_type = document.getElementById('ledger-type-filter')?.value || '';
+                payload.branch_id = document.getElementById('ledger-branch-filter')?.value || '';
+                payload.staff_id = document.getElementById('ledger-staff-filter')?.value || '';
+                payload.from_date = document.getElementById('ledger-from-filter')?.value || '';
+                payload.to_date = document.getElementById('ledger-to-filter')?.value || '';
+            },
+        },
+        order: [[0, 'desc']],
+        columns: [
+            { data: 'transaction_date', name: 'transaction_date' },
+            { data: 'customer_name', name: 'customer.name' },
+            { data: 'chit_no', name: 'enrollment.chit_no' },
+            { data: 'transaction_type_badge', name: 'transaction_type' },
+            { data: 'debit', name: 'debit', className: 'text-end', render: formatLedgerMoney },
+            { data: 'credit', name: 'credit', className: 'text-end', render: formatLedgerMoney },
+            { data: 'balance', name: 'balance', className: 'text-end', render: formatLedgerMoney },
+            { data: 'reference', name: 'reference_id', orderable: false },
+            { data: 'remarks', name: 'remarks' },
+            { data: 'created_by_name', name: 'creator.name' },
+            { data: 'actions', name: 'actions', orderable: false, searchable: false, className: 'text-end' },
+        ],
+    });
+
+    [
+        'ledger-customer-filter',
+        'ledger-enrollment-filter',
+        'ledger-type-filter',
+        'ledger-branch-filter',
+        'ledger-staff-filter',
+        'ledger-from-filter',
+        'ledger-to-filter',
+    ].forEach((id) => {
+        document.getElementById(id)?.addEventListener('change', () => {
+            ledgersTable?.ajax.reload();
+        });
+    });
+}
+
 document.addEventListener('click', async (event) => {
     const button = event.target.closest('[data-customer-action]');
 
@@ -1111,6 +1163,65 @@ document.addEventListener('click', async (event) => {
         if (receiptsTable) {
             receiptsTable.ajax.reload(null, false);
         } else if (payload.data?.redirect) {
+            window.location.href = payload.data.redirect;
+        } else {
+            window.location.reload();
+        }
+    } catch (error) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Action needed',
+            text: error.message,
+        });
+    }
+});
+
+document.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-ledger-action="rebuild"]');
+
+    if (!button) {
+        return;
+    }
+
+    const result = await Swal.fire({
+        icon: 'warning',
+        title: 'Rebuild ledger?',
+        text: 'Missing due and payment entries will be added and balances recalculated. Existing ledger rows are not deleted.',
+        showCancelButton: true,
+        confirmButtonText: 'Rebuild',
+        confirmButtonColor: '#d9a441',
+    });
+
+    if (!result.isConfirmed) {
+        return;
+    }
+
+    try {
+        const response = await fetch(button.dataset.url, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            body: JSON.stringify({}),
+        });
+        const payload = await response.json();
+
+        if (!response.ok || !payload.success) {
+            const firstError = payload.data?.errors ? Object.values(payload.data.errors).flat()[0] : null;
+            throw new Error(firstError || payload.message || 'Unable to rebuild ledger');
+        }
+
+        await Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: payload.message,
+            timer: 1800,
+            showConfirmButton: false,
+        });
+
+        if (payload.data?.redirect) {
             window.location.href = payload.data.redirect;
         } else {
             window.location.reload();

@@ -16,7 +16,8 @@ use Illuminate\Validation\ValidationException;
 class InstallmentService
 {
     public function __construct(
-        private readonly InstallmentRepository $installments
+        private readonly InstallmentRepository $installments,
+        private readonly LedgerService $ledgerService
     ) {
     }
 
@@ -55,6 +56,11 @@ class InstallmentService
             }
 
             $createdInstallments = $this->getEnrollmentInstallments($enrollment);
+
+            foreach ($createdInstallments as $installment) {
+                $this->ledgerService->createDueEntry($installment);
+            }
+
             $this->logInstallmentAction(
                 $enrollment,
                 'schedule_generation',
