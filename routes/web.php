@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Web\AuthController as WebAuthController;
+use App\Http\Controllers\Web\BranchController;
 use App\Http\Controllers\Web\ChitEnrollmentController;
 use App\Http\Controllers\Web\ChitSchemeController;
 use App\Http\Controllers\Web\CustomerController;
@@ -14,6 +15,8 @@ use App\Http\Controllers\Web\MaturityClosingController;
 use App\Http\Controllers\Web\PaymentController;
 use App\Http\Controllers\Web\PendingDueController;
 use App\Http\Controllers\Web\ReceiptController;
+use App\Http\Controllers\Web\StaffCashHandoverController;
+use App\Http\Controllers\Web\StaffController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/login');
@@ -32,6 +35,81 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
     ->name('dashboard');
 
 Route::middleware(['auth', 'verified', 'role:Admin|Manager|Staff'])->group(function () {
+    Route::get('/branches', [BranchController::class, 'index'])
+        ->middleware('permission:branch.view')
+        ->name('branches.index');
+    Route::get('/branches/data', [BranchController::class, 'data'])
+        ->middleware('permission:branch.view')
+        ->name('branches.data');
+    Route::get('/branches/create', [BranchController::class, 'create'])
+        ->middleware('permission:branch.create')
+        ->name('branches.create');
+    Route::post('/branches', [BranchController::class, 'store'])
+        ->middleware('permission:branch.create')
+        ->name('branches.store');
+    Route::get('/branches/{branch}', [BranchController::class, 'show'])
+        ->middleware('permission:branch.view')
+        ->name('branches.show');
+    Route::get('/branches/{branch}/edit', [BranchController::class, 'edit'])
+        ->middleware('permission:branch.edit')
+        ->name('branches.edit');
+    Route::put('/branches/{branch}', [BranchController::class, 'update'])
+        ->middleware('permission:branch.edit')
+        ->name('branches.update');
+    Route::delete('/branches/{branch}', [BranchController::class, 'destroy'])
+        ->middleware('permission:branch.delete')
+        ->name('branches.destroy');
+
+    Route::get('/staff', [StaffController::class, 'index'])
+        ->middleware('permission:staff.view')
+        ->name('staff.index');
+    Route::get('/staff/data', [StaffController::class, 'data'])
+        ->middleware('permission:staff.view')
+        ->name('staff.data');
+    Route::get('/staff/create', [StaffController::class, 'create'])
+        ->middleware('permission:staff.create')
+        ->name('staff.create');
+    Route::post('/staff', [StaffController::class, 'store'])
+        ->middleware('permission:staff.create')
+        ->name('staff.store');
+    Route::get('/staff/{staff}', [StaffController::class, 'show'])
+        ->middleware('permission:staff.view')
+        ->name('staff.show');
+    Route::get('/staff/{staff}/edit', [StaffController::class, 'edit'])
+        ->middleware('permission:staff.edit')
+        ->name('staff.edit');
+    Route::put('/staff/{staff}', [StaffController::class, 'update'])
+        ->middleware('permission:staff.edit')
+        ->name('staff.update');
+    Route::delete('/staff/{staff}', [StaffController::class, 'destroy'])
+        ->middleware('permission:staff.delete')
+        ->name('staff.destroy');
+    Route::post('/staff/{staff}/status', [StaffController::class, 'status'])
+        ->middleware('permission:staff.edit')
+        ->name('staff.status');
+
+    Route::get('/staff-cash-handovers', [StaffCashHandoverController::class, 'index'])
+        ->middleware('permission:staff_cash_handover.view')
+        ->name('staff-cash-handovers.index');
+    Route::get('/staff-cash-handovers/data', [StaffCashHandoverController::class, 'data'])
+        ->middleware('permission:staff_cash_handover.view')
+        ->name('staff-cash-handovers.data');
+    Route::get('/staff-cash-handovers/create', [StaffCashHandoverController::class, 'create'])
+        ->middleware('permission:staff_cash_handover.create')
+        ->name('staff-cash-handovers.create');
+    Route::post('/staff-cash-handovers', [StaffCashHandoverController::class, 'store'])
+        ->middleware('permission:staff_cash_handover.create')
+        ->name('staff-cash-handovers.store');
+    Route::get('/staff-cash-handovers/{handover}', [StaffCashHandoverController::class, 'show'])
+        ->middleware('permission:staff_cash_handover.view')
+        ->name('staff-cash-handovers.show');
+    Route::post('/staff-cash-handovers/{handover}/receive', [StaffCashHandoverController::class, 'receive'])
+        ->middleware('permission:staff_cash_handover.receive')
+        ->name('staff-cash-handovers.receive');
+    Route::post('/staff-cash-handovers/{handover}/reject', [StaffCashHandoverController::class, 'reject'])
+        ->middleware('permission:staff_cash_handover.receive')
+        ->name('staff-cash-handovers.reject');
+
     Route::get('/gold-rates', [GoldRateController::class, 'index'])
         ->middleware('permission:gold_rates.view')
         ->name('gold-rates.index');

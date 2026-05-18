@@ -1293,6 +1293,157 @@ if (goldRatesTableElement && window.jQuery?.fn?.DataTable) {
     });
 }
 
+const branchesTableElement = document.getElementById('branches-table');
+let branchesTable = null;
+
+if (branchesTableElement && window.jQuery?.fn?.DataTable) {
+    branchesTable = window.jQuery(branchesTableElement).DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: branchesTableElement.dataset.source,
+            data: (payload) => {
+                payload.status = document.getElementById('branch-status-filter')?.value || '';
+                payload.city = document.getElementById('branch-city-filter')?.value || '';
+            },
+        },
+        order: [[8, 'desc']],
+        columns: [
+            { data: 'branch_code', name: 'branch_code' },
+            { data: 'name', name: 'name' },
+            { data: 'mobile', name: 'mobile', defaultContent: '-' },
+            { data: 'city', name: 'city', defaultContent: '-' },
+            { data: 'status_badge', name: 'status', searchable: false },
+            { data: 'users_count', name: 'users_count', searchable: false, className: 'text-end' },
+            { data: 'enrollments_count', name: 'enrollments_count', searchable: false, className: 'text-end' },
+            { data: 'payments_count', name: 'payments_count', searchable: false, className: 'text-end' },
+            { data: 'created_at', name: 'created_at' },
+            { data: 'actions', name: 'actions', orderable: false, searchable: false, className: 'text-end' },
+        ],
+    });
+
+    ['branch-status-filter', 'branch-city-filter'].forEach((id) => {
+        const eventName = id === 'branch-city-filter' ? 'input' : 'change';
+        document.getElementById(id)?.addEventListener(eventName, () => {
+            branchesTable?.ajax.reload();
+        });
+    });
+}
+
+const staffTableElement = document.getElementById('staff-table');
+let staffTable = null;
+
+if (staffTableElement && window.jQuery?.fn?.DataTable) {
+    staffTable = window.jQuery(staffTableElement).DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: staffTableElement.dataset.source,
+            data: (payload) => {
+                payload.role = document.getElementById('staff-role-filter')?.value || '';
+                payload.branch_id = document.getElementById('staff-branch-filter')?.value || '';
+                payload.status = document.getElementById('staff-status-filter')?.value || '';
+            },
+        },
+        order: [[8, 'desc']],
+        columns: [
+            { data: 'name', name: 'name' },
+            { data: 'email', name: 'email' },
+            { data: 'mobile', name: 'mobile', defaultContent: '-' },
+            { data: 'role_name', name: 'roles.name', searchable: false },
+            { data: 'branch_name', name: 'branch.name' },
+            { data: 'status_badge', name: 'status', searchable: false },
+            { data: 'staff_collections_count', name: 'staff_collections_count', searchable: false, className: 'text-end' },
+            { data: 'assigned_chit_enrollments_count', name: 'assigned_chit_enrollments_count', searchable: false, className: 'text-end' },
+            { data: 'created_at', name: 'created_at' },
+            { data: 'actions', name: 'actions', orderable: false, searchable: false, className: 'text-end' },
+        ],
+    });
+
+    ['staff-role-filter', 'staff-branch-filter', 'staff-status-filter'].forEach((id) => {
+        document.getElementById(id)?.addEventListener('change', () => {
+            staffTable?.ajax.reload();
+        });
+    });
+}
+
+const handoversTableElement = document.getElementById('handovers-table');
+let handoversTable = null;
+const handoverMoney = (value) => `Rs. ${Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+if (handoversTableElement && window.jQuery?.fn?.DataTable) {
+    handoversTable = window.jQuery(handoversTableElement).DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: handoversTableElement.dataset.source,
+            data: (payload) => {
+                payload.staff_id = document.getElementById('handover-staff-filter')?.value || '';
+                payload.branch_id = document.getElementById('handover-branch-filter')?.value || '';
+                payload.status = document.getElementById('handover-status-filter')?.value || '';
+                payload.from_date = document.getElementById('handover-from-filter')?.value || '';
+                payload.to_date = document.getElementById('handover-to-filter')?.value || '';
+            },
+        },
+        order: [[1, 'desc']],
+        columns: [
+            { data: 'handover_no', name: 'handover_no' },
+            { data: 'handover_date', name: 'handover_date' },
+            { data: 'staff_name', name: 'staff.name' },
+            { data: 'branch_name', name: 'branch.name' },
+            { data: 'cash_amount', name: 'cash_amount', className: 'text-end', render: handoverMoney },
+            { data: 'upi_amount', name: 'upi_amount', className: 'text-end', render: handoverMoney },
+            { data: 'card_amount', name: 'card_amount', className: 'text-end', render: handoverMoney },
+            { data: 'bank_amount', name: 'bank_amount', className: 'text-end', render: handoverMoney },
+            { data: 'total_amount', name: 'total_amount', className: 'text-end', render: handoverMoney },
+            { data: 'status_badge', name: 'status', searchable: false },
+            { data: 'receiver_name', name: 'receiver.name' },
+            { data: 'actions', name: 'actions', orderable: false, searchable: false, className: 'text-end' },
+        ],
+    });
+
+    [
+        'handover-staff-filter',
+        'handover-branch-filter',
+        'handover-status-filter',
+        'handover-from-filter',
+        'handover-to-filter',
+    ].forEach((id) => {
+        document.getElementById(id)?.addEventListener('change', () => {
+            handoversTable?.ajax.reload();
+        });
+    });
+}
+
+const refreshHandoverTotal = () => {
+    const totalElement = document.querySelector('[data-handover-total]');
+
+    if (!totalElement) {
+        return;
+    }
+
+    const total = Array.from(document.querySelectorAll('[data-handover-amount]'))
+        .reduce((sum, field) => sum + Number(field.value || 0), 0);
+
+    totalElement.textContent = handoverMoney(total);
+};
+
+document.querySelectorAll('[data-handover-amount]').forEach((field) => {
+    field.addEventListener('input', refreshHandoverTotal);
+});
+
+document.getElementById('staff_id')?.addEventListener('change', (event) => {
+    const selected = event.target.selectedOptions?.[0];
+    const branchId = selected?.dataset.branch;
+    const branchSelect = document.getElementById('branch_id');
+
+    if (branchId && branchSelect && !branchSelect.value) {
+        branchSelect.value = branchId;
+    }
+});
+
+refreshHandoverTotal();
+
 document.addEventListener('click', async (event) => {
     const button = event.target.closest('[data-customer-action]');
 
@@ -2142,6 +2293,204 @@ document.addEventListener('click', async (event) => {
         } else {
             goldRatesTable?.ajax.reload(null, false);
         }
+    } catch (error) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Action needed',
+            text: error.message,
+        });
+    }
+});
+
+document.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-branch-action]');
+
+    if (!button) {
+        return;
+    }
+
+    const result = await Swal.fire({
+        icon: 'warning',
+        title: 'Delete branch?',
+        text: 'Branches with linked users, enrollments, or payments will be marked inactive.',
+        showCancelButton: true,
+        confirmButtonText: 'Delete',
+        confirmButtonColor: '#dc3545',
+    });
+
+    if (!result.isConfirmed) {
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('_method', 'DELETE');
+
+    try {
+        const response = await fetch(button.dataset.url, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            body: formData,
+        });
+        const payload = await response.json();
+
+        if (!response.ok || !payload.success) {
+            const firstError = payload.data?.errors ? Object.values(payload.data.errors).flat()[0] : null;
+            throw new Error(firstError || payload.message || 'Unable to delete branch');
+        }
+
+        await Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: payload.message,
+            timer: 1800,
+            showConfirmButton: false,
+        });
+
+        branchesTable?.ajax.reload(null, false);
+    } catch (error) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Action needed',
+            text: error.message,
+        });
+    }
+});
+
+document.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-staff-action]');
+
+    if (!button) {
+        return;
+    }
+
+    const action = button.dataset.staffAction;
+    const isDelete = action === 'delete';
+    const nextStatus = button.dataset.status;
+    const result = await Swal.fire({
+        icon: 'warning',
+        title: isDelete ? 'Delete staff user?' : `Mark staff ${nextStatus}?`,
+        text: isDelete ? 'Staff with linked collections will be marked inactive.' : 'This changes web and API login availability.',
+        showCancelButton: true,
+        confirmButtonText: isDelete ? 'Delete' : 'Update status',
+        confirmButtonColor: isDelete ? '#dc3545' : '#d9a441',
+    });
+
+    if (!result.isConfirmed) {
+        return;
+    }
+
+    const formData = new FormData();
+
+    if (isDelete) {
+        formData.append('_method', 'DELETE');
+    } else {
+        formData.append('status', nextStatus);
+    }
+
+    try {
+        const response = await fetch(button.dataset.url, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            body: formData,
+        });
+        const payload = await response.json();
+
+        if (!response.ok || !payload.success) {
+            const firstError = payload.data?.errors ? Object.values(payload.data.errors).flat()[0] : null;
+            throw new Error(firstError || payload.message || 'Unable to process staff user');
+        }
+
+        await Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: payload.message,
+            timer: 1800,
+            showConfirmButton: false,
+        });
+
+        staffTable?.ajax.reload(null, false);
+    } catch (error) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Action needed',
+            text: error.message,
+        });
+    }
+});
+
+document.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-handover-action]');
+
+    if (!button) {
+        return;
+    }
+
+    const action = button.dataset.handoverAction;
+    const confirmation = {
+        receive: {
+            icon: 'question',
+            title: 'Receive handover?',
+            text: 'This marks the pending handover as received.',
+            confirmButtonText: 'Receive',
+            confirmButtonColor: '#198754',
+        },
+        reject: {
+            icon: 'warning',
+            title: 'Reject handover?',
+            text: 'Enter the rejection reason.',
+            input: 'textarea',
+            inputPlaceholder: 'Reason',
+            inputValidator: (value) => (!value ? 'Reason is required' : undefined),
+            confirmButtonText: 'Reject',
+            confirmButtonColor: '#dc3545',
+        },
+    }[action];
+
+    if (!confirmation) {
+        return;
+    }
+
+    const result = await Swal.fire({
+        ...confirmation,
+        showCancelButton: true,
+    });
+
+    if (!result.isConfirmed) {
+        return;
+    }
+
+    try {
+        const response = await fetch(button.dataset.url, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            body: action === 'reject' ? JSON.stringify({ remarks: result.value }) : JSON.stringify({}),
+        });
+        const payload = await response.json();
+
+        if (!response.ok || !payload.success) {
+            const firstError = payload.data?.errors ? Object.values(payload.data.errors).flat()[0] : null;
+            throw new Error(firstError || payload.message || 'Unable to process handover');
+        }
+
+        await Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: payload.message,
+            timer: 1800,
+            showConfirmButton: false,
+        });
+
+        handoversTable?.ajax.reload(null, false);
     } catch (error) {
         Swal.fire({
             icon: 'error',

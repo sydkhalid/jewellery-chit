@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BranchController;
 use App\Http\Controllers\Api\ChitEnrollmentController;
 use App\Http\Controllers\Api\ChitSchemeController;
 use App\Http\Controllers\Api\CustomerController;
@@ -12,6 +13,8 @@ use App\Http\Controllers\Api\MaturityClosingController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PendingDueController;
 use App\Http\Controllers\Api\ReceiptController;
+use App\Http\Controllers\Api\StaffCashHandoverController;
+use App\Http\Controllers\Api\StaffController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
@@ -19,6 +22,18 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
+
+    Route::get('/branches', [BranchController::class, 'index'])->middleware('can:branch.view');
+    Route::get('/branches/{branch}', [BranchController::class, 'show'])->middleware('can:branch.view');
+    Route::get('/branches/{branch}/collection-summary', [BranchController::class, 'collectionSummary'])->middleware('can:branch.view');
+
+    Route::get('/staff', [StaffController::class, 'index'])->middleware('can:staff.view');
+    Route::get('/staff/{staff}', [StaffController::class, 'show'])->middleware('can:staff.view');
+    Route::get('/staff/{staff}/collection-summary', [StaffController::class, 'collectionSummary'])->middleware('can:staff.view');
+
+    Route::get('/staff-cash-handovers', [StaffCashHandoverController::class, 'index'])->middleware('can:staff_cash_handover.view');
+    Route::post('/staff-cash-handovers', [StaffCashHandoverController::class, 'store'])->middleware('can:staff_cash_handover.create');
+    Route::get('/staff-cash-handovers/{handover}', [StaffCashHandoverController::class, 'show'])->middleware('can:staff_cash_handover.view');
 
     Route::get('/customers', [CustomerController::class, 'index'])->middleware('can:customers.view');
     Route::post('/customers', [CustomerController::class, 'store'])->middleware('can:customers.create');

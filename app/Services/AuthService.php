@@ -31,7 +31,7 @@ class AuthService
 
         $user = Auth::guard('web')->user();
 
-        if (! $user instanceof User || ! $user->hasAnyRole($allowedRoles) || ! $user->can('dashboard.view')) {
+        if (! $user instanceof User || $user->status !== 'active' || ! $user->hasAnyRole($allowedRoles) || ! $user->can('dashboard.view')) {
             Auth::guard('web')->logout();
             RateLimiter::hit($request->throttleKey());
 
@@ -58,6 +58,14 @@ class AuthService
                 'success' => false,
                 'message' => 'Invalid login credentials',
                 'status' => 422,
+            ];
+        }
+
+        if ($user->status !== 'active') {
+            return [
+                'success' => false,
+                'message' => 'This account is inactive',
+                'status' => 403,
             ];
         }
 

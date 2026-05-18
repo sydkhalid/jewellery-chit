@@ -126,10 +126,13 @@
             'title' => 'Staff & Branch',
             'icon' => 'bi-building',
             'permissions' => ['staff.view', 'staff.create', 'staff.edit', 'staff.delete', 'branch.view', 'branch.create', 'branch.edit', 'branch.delete', 'staff_cash_handover.view', 'staff_cash_handover.create', 'staff_cash_handover.receive'],
+            'active' => request()->routeIs('branches.*', 'staff.*', 'staff-cash-handovers.*'),
             'children' => [
-                ['title' => 'Staff Users', 'permission' => 'staff.view'],
-                ['title' => 'Branches', 'permission' => 'branch.view'],
-                ['title' => 'Cash Handovers', 'permission' => 'staff_cash_handover.view'],
+                ['title' => 'Branch List', 'permission' => 'branch.view', 'route' => route('branches.index'), 'active' => request()->routeIs('branches.index', 'branches.show', 'branches.edit')],
+                ['title' => 'Add Branch', 'permission' => 'branch.create', 'route' => route('branches.create'), 'active' => request()->routeIs('branches.create')],
+                ['title' => 'Staff List', 'permission' => 'staff.view', 'route' => route('staff.index'), 'active' => request()->routeIs('staff.index', 'staff.show', 'staff.edit')],
+                ['title' => 'Add Staff', 'permission' => 'staff.create', 'route' => route('staff.create'), 'active' => request()->routeIs('staff.create')],
+                ['title' => 'Cash Handovers', 'permission' => 'staff_cash_handover.view', 'route' => route('staff-cash-handovers.index'), 'active' => request()->routeIs('staff-cash-handovers.*')],
             ],
         ],
         [
