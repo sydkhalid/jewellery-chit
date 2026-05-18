@@ -18,7 +18,8 @@ use Illuminate\Validation\ValidationException;
 class ReceiptService
 {
     public function __construct(
-        private readonly ReceiptRepository $receipts
+        private readonly ReceiptRepository $receipts,
+        private readonly MessageService $messageService
     ) {
     }
 
@@ -157,24 +158,20 @@ class ReceiptService
     {
         $this->ensureReceiptCanOutput($receipt);
         $receipt->load($this->receiptRelations());
-
-        $message = sprintf(
-            'Receipt %s for Rs. %s has been generated for chit %s.',
-            $receipt->receipt_no,
-            number_format((float) $receipt->amount, 2),
-            $receipt->enrollment?->chit_no ?? '-'
-        );
+        $share = $this->messageService->sendReceiptMessage($receipt, 'whatsapp');
 
         $this->logReceiptAction($receipt, 'whatsapp', 'whatsapp share requested', null, [
             'mobile' => $receipt->customer?->mobile,
-            'message' => $message,
+            'message' => $share['message'],
+            'message_log_id' => $share['log']->id ?? null,
             'placeholder' => true,
         ]);
 
         return [
-            'status' => 'placeholder',
+            'status' => $share['status'],
             'mobile' => $receipt->customer?->mobile,
-            'message' => $message,
+            'message' => $share['message'],
+            'message_log_id' => $share['log']->id ?? null,
         ];
     }
 

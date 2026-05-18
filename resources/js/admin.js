@@ -1567,6 +1567,215 @@ if (cashbooksTableElement && window.jQuery?.fn?.DataTable) {
     });
 }
 
+const messageSendForm = document.querySelector('[data-message-send-form]');
+const messageTables = {};
+
+const messageFilterPayload = (container) => {
+    const payload = {};
+
+    container?.querySelectorAll('[data-message-filter]').forEach((field) => {
+        payload[field.dataset.messageFilter] = field.value || '';
+    });
+
+    return payload;
+};
+
+const messageLogColumns = (type) => {
+    const baseColumns = [
+        { data: 'created_at', name: 'created_at' },
+        { data: 'customer_name', name: 'customer.name' },
+    ];
+
+    if (type === 'notifications') {
+        return [
+            ...baseColumns,
+            { data: 'chit_no', name: 'enrollment.chit_no' },
+            { data: 'message_type_label', name: 'notification_type' },
+            { data: 'channel', name: 'channel' },
+            { data: 'message_preview', name: 'message' },
+            { data: 'status_badge', name: 'status', orderable: true, searchable: false },
+            { data: 'sent_at', name: 'sent_at' },
+            { data: 'actions', name: 'actions', orderable: false, searchable: false, className: 'text-end' },
+        ];
+    }
+
+    return [
+        ...baseColumns,
+        { data: 'mobile', name: 'mobile' },
+        { data: 'message_type_label', name: 'message_type' },
+        { data: 'channel', name: 'channel', orderable: false, searchable: false },
+        { data: 'message_preview', name: 'message' },
+        { data: 'status_badge', name: 'status', orderable: true, searchable: false },
+        { data: 'retry_count', name: 'retry_count', searchable: false },
+        { data: 'sent_at', name: 'sent_at' },
+        { data: 'actions', name: 'actions', orderable: false, searchable: false, className: 'text-end' },
+    ];
+};
+
+document.querySelectorAll('[data-message-log-table]').forEach((tableElement) => {
+    if (!window.jQuery?.fn?.DataTable) {
+        return;
+    }
+
+    const type = tableElement.dataset.messageLogType;
+    const container = tableElement.closest('.admin-card');
+
+    messageTables[type] = window.jQuery(tableElement).DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: tableElement.dataset.source,
+            data: (payload) => Object.assign(payload, messageFilterPayload(container)),
+        },
+        order: [[0, 'desc']],
+        columns: messageLogColumns(type),
+    });
+
+    container?.querySelectorAll('[data-message-filter]').forEach((field) => {
+        field.addEventListener('change', () => messageTables[type]?.ajax.reload());
+        field.addEventListener('keyup', () => messageTables[type]?.ajax.reload());
+    });
+});
+
+document.querySelector('[data-message-customer]')?.addEventListener('change', (event) => {
+    const selected = event.target.selectedOptions?.[0];
+    const mobile = selected?.dataset.mobile || '';
+    const mobileField = document.getElementById('message_mobile');
+
+    if (mobileField && mobile) {
+        mobileField.value = mobile;
+    }
+});
+
+document.querySelector('[data-message-channel]')?.addEventListener('change', (event) => {
+    if (!messageSendForm) {
+        return;
+    }
+
+    messageSendForm.action = event.target.value === 'sms'
+        ? messageSendForm.dataset.smsUrl
+        : messageSendForm.dataset.whatsappUrl;
+});
+
+messageSendForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    clearFormErrors(messageSendForm);
+
+    const submitButton = messageSendForm.querySelector('[type="submit"]');
+    submitButton?.setAttribute('disabled', 'disabled');
+
+    try {
+        const response = await fetch(messageSendForm.action, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            body: new FormData(messageSendForm),
+        });
+        const payload = await response.json();
+
+        if (!response.ok || !payload.success) {
+            if (response.status === 422 && payload.data?.errors) {
+                applyFormErrors(messageSendForm, payload.data.errors);
+            }
+
+            const firstError = payload.data?.errors ? Object.values(payload.data.errors).flat()[0] : null;
+            throw new Error(firstError || payload.message || 'Unable to send message');
+        }
+
+        Modal.getInstance(document.getElementById('sendMessageModal'))?.hide();
+        messageSendForm.reset();
+        messageSendForm.action = messageSendForm.dataset.whatsappUrl;
+
+        await Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: payload.message,
+            timer: 1800,
+            showConfirmButton: false,
+        });
+    } catch (error) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Action needed',
+            text: error.message,
+        });
+    } finally {
+        submitButton?.removeAttribute('disabled');
+    }
+});
+
+document.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-message-response]');
+
+    if (!button) {
+        return;
+    }
+
+    Swal.fire({
+        icon: 'info',
+        title: button.dataset.title || 'Message response',
+        text: button.dataset.response || 'No response stored.',
+        width: 720,
+    });
+});
+
+document.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-message-retry]');
+
+    if (!button) {
+        return;
+    }
+
+    const result = await Swal.fire({
+        icon: 'warning',
+        title: 'Retry failed message?',
+        text: 'The placeholder provider will be called again and retry count will increase.',
+        showCancelButton: true,
+        confirmButtonText: 'Retry',
+        confirmButtonColor: '#d9a441',
+    });
+
+    if (!result.isConfirmed) {
+        return;
+    }
+
+    try {
+        const response = await fetch(button.dataset.url, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            body: JSON.stringify({}),
+        });
+        const payload = await response.json();
+
+        if (!response.ok || !payload.success) {
+            const firstError = payload.data?.errors ? Object.values(payload.data.errors).flat()[0] : null;
+            throw new Error(firstError || payload.message || 'Unable to retry message');
+        }
+
+        await Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: payload.message,
+            timer: 1800,
+            showConfirmButton: false,
+        });
+
+        messageTables[button.dataset.table]?.ajax.reload(null, false);
+    } catch (error) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Action needed',
+            text: error.message,
+        });
+    }
+});
+
 const reportTableElement = document.querySelector('[data-report-table]');
 let reportTable = null;
 const reportMoney = (value) => `Rs. ${Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

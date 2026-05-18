@@ -13,12 +13,15 @@ use App\Http\Controllers\Web\InstallmentController;
 use App\Http\Controllers\Web\JewelleryInvoiceController;
 use App\Http\Controllers\Web\LedgerController;
 use App\Http\Controllers\Web\MaturityClosingController;
+use App\Http\Controllers\Web\NotificationController;
 use App\Http\Controllers\Web\PaymentController;
 use App\Http\Controllers\Web\PendingDueController;
 use App\Http\Controllers\Web\ReceiptController;
 use App\Http\Controllers\Web\ReportController;
+use App\Http\Controllers\Web\SmsLogController;
 use App\Http\Controllers\Web\StaffCashHandoverController;
 use App\Http\Controllers\Web\StaffController;
+use App\Http\Controllers\Web\WhatsappLogController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/login');
@@ -37,6 +40,31 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
     ->name('dashboard');
 
 Route::middleware(['auth', 'verified', 'role:Admin|Manager|Staff'])->group(function () {
+    Route::get('/messages', [NotificationController::class, 'index'])
+        ->middleware('permission:messages.view')
+        ->name('messages.index');
+    Route::get('/messages/whatsapp-logs', [WhatsappLogController::class, 'index'])
+        ->middleware('permission:messages.logs')
+        ->name('messages.whatsapp-logs');
+    Route::get('/messages/sms-logs', [SmsLogController::class, 'index'])
+        ->middleware('permission:messages.logs')
+        ->name('messages.sms-logs');
+    Route::get('/messages/notifications', [NotificationController::class, 'notifications'])
+        ->middleware('permission:messages.view')
+        ->name('messages.notifications');
+    Route::post('/messages/send-whatsapp', [NotificationController::class, 'sendWhatsapp'])
+        ->middleware('permission:messages.send')
+        ->name('messages.send-whatsapp');
+    Route::post('/messages/send-sms', [NotificationController::class, 'sendSms'])
+        ->middleware('permission:messages.send')
+        ->name('messages.send-sms');
+    Route::post('/whatsapp-logs/{log}/retry', [WhatsappLogController::class, 'retry'])
+        ->middleware('permission:messages.retry')
+        ->name('whatsapp-logs.retry');
+    Route::post('/sms-logs/{log}/retry', [SmsLogController::class, 'retry'])
+        ->middleware('permission:messages.retry')
+        ->name('sms-logs.retry');
+
     Route::get('/reports', [ReportController::class, 'index'])
         ->middleware('permission:reports.view')
         ->name('reports.index');

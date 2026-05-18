@@ -5,10 +5,6 @@ namespace App\Services;
 use App\Models\ActivityLog;
 use App\Models\AuditLog;
 use App\Models\ChitInstallment;
-use App\Models\Notification;
-use App\Models\SmsLog;
-use App\Models\WhatsappLog;
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
@@ -18,6 +14,11 @@ use Illuminate\Validation\ValidationException;
 
 class PendingDueService
 {
+    public function __construct(
+        private readonly MessageService $messageService
+    ) {
+    }
+
     /**
      * @param  array<string, mixed>  $filters
      */
@@ -147,43 +148,14 @@ class PendingDueService
 
         return DB::transaction(function () use ($installment, $channel): array {
             $installment->loadMissing(['enrollment.customer', 'enrollment.scheme']);
-            $message = $this->reminderMessage($installment);
             $customer = $installment->enrollment?->customer;
+            $enrollment = $installment->enrollment;
 
-            Notification::create([
-                'customer_id' => $customer?->id,
-                'enrollment_id' => $installment->enrollment_id,
-                'notification_type' => 'due_reminder',
-                'title' => ucfirst($channel).' due reminder',
-                'message' => $message,
-                'channel' => $channel,
-                'status' => 'sent',
-                'sent_at' => now(),
-            ]);
-
-            if ($channel === 'whatsapp') {
-                WhatsappLog::create([
-                    'customer_id' => $customer?->id,
-                    'mobile' => (string) $customer?->mobile,
-                    'message' => $message,
-                    'response' => 'Placeholder WhatsApp reminder queued.',
-                    'status' => 'sent',
-                    'retry_count' => 0,
-                    'sent_at' => now(),
-                ]);
+            if (! $customer || ! $enrollment) {
+                throw ValidationException::withMessages(['customer' => 'Customer and enrollment details are required for reminders.']);
             }
 
-            if ($channel === 'sms') {
-                SmsLog::create([
-                    'customer_id' => $customer?->id,
-                    'mobile' => (string) $customer?->mobile,
-                    'message' => $message,
-                    'response' => 'Placeholder SMS reminder queued.',
-                    'status' => 'sent',
-                    'retry_count' => 0,
-                    'sent_at' => now(),
-                ]);
-            }
+            $messageResult = $this->messageService->sendDueReminder($customer, $enrollment, $installment, $channel);
 
             $oldValues = $installment->toArray();
             $installment->update([
@@ -194,14 +166,16 @@ class PendingDueService
             $installment = $installment->refresh();
             $this->logPendingDueAction($installment, 'reminder', "{$channel} reminder sent", $oldValues, [
                 'channel' => $channel,
-                'message' => $message,
+                'message' => $messageResult['message'],
+                'message_log_id' => $messageResult['log']->id ?? null,
                 'reminder_count' => $installment->reminder_count,
             ]);
 
             return [
                 'installment_id' => $installment->id,
                 'channel' => $channel,
-                'message' => $message,
+                'message' => $messageResult['message'],
+                'message_log_id' => $messageResult['log']->id ?? null,
             ];
         });
     }

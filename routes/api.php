@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\InstallmentController;
 use App\Http\Controllers\Api\JewelleryInvoiceController;
 use App\Http\Controllers\Api\LedgerController;
 use App\Http\Controllers\Api\MaturityClosingController;
+use App\Http\Controllers\Api\MessageController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PendingDueController;
 use App\Http\Controllers\Api\ReceiptController;
@@ -24,6 +25,12 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
+
+    Route::post('/messages/whatsapp', [MessageController::class, 'whatsapp'])->middleware('can:messages.send');
+    Route::post('/messages/sms', [MessageController::class, 'sms'])->middleware('can:messages.send');
+    Route::get('/messages/notifications', [MessageController::class, 'notifications'])->middleware('can:messages.view');
+    Route::get('/messages/whatsapp-logs', [MessageController::class, 'whatsappLogs'])->middleware('can:messages.logs');
+    Route::get('/messages/sms-logs', [MessageController::class, 'smsLogs'])->middleware('can:messages.logs');
 
     Route::get('/cashbooks', [CashbookController::class, 'index'])->middleware('can:cashbook.view');
     Route::get('/cashbooks/daily-summary', [CashbookController::class, 'dailySummary'])->middleware('can:cashbook.view');

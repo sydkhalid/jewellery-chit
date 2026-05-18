@@ -172,10 +172,12 @@
             'title' => 'WhatsApp/SMS',
             'icon' => 'bi-chat-dots',
             'permissions' => ['messages.view', 'messages.send', 'messages.retry', 'messages.logs'],
+            'active' => request()->routeIs('messages.*', 'whatsapp-logs.*', 'sms-logs.*'),
             'children' => [
-                ['title' => 'Message Templates', 'permission' => 'messages.view'],
-                ['title' => 'Send Campaign', 'permission' => 'messages.send'],
-                ['title' => 'Message Logs', 'permission' => 'messages.logs'],
+                ['title' => 'Message Dashboard', 'permission' => 'messages.view', 'route' => route('messages.index'), 'active' => request()->routeIs('messages.index')],
+                ['title' => 'WhatsApp Logs', 'permission' => 'messages.logs', 'route' => route('messages.whatsapp-logs'), 'active' => request()->routeIs('messages.whatsapp-logs', 'whatsapp-logs.*')],
+                ['title' => 'SMS Logs', 'permission' => 'messages.logs', 'route' => route('messages.sms-logs'), 'active' => request()->routeIs('messages.sms-logs', 'sms-logs.*')],
+                ['title' => 'Notifications', 'permission' => 'messages.view', 'route' => route('messages.notifications'), 'active' => request()->routeIs('messages.notifications')],
             ],
         ],
         [

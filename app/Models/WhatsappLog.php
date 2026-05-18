@@ -13,6 +13,7 @@ class WhatsappLog extends Model
 
     protected $fillable = [
         'customer_id',
+        'message_type',
         'mobile',
         'message',
         'response',
