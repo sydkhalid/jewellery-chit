@@ -9,6 +9,7 @@ use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\InstallmentController;
 use App\Http\Controllers\Web\LedgerController;
 use App\Http\Controllers\Web\PaymentController;
+use App\Http\Controllers\Web\PendingDueController;
 use App\Http\Controllers\Web\ReceiptController;
 use Illuminate\Support\Facades\Route;
 
@@ -28,6 +29,34 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
     ->name('dashboard');
 
 Route::middleware(['auth', 'verified', 'role:Admin|Manager|Staff'])->group(function () {
+    Route::get('/pending-dues', [PendingDueController::class, 'index'])
+        ->middleware('permission:pending_dues.view')
+        ->name('pending-dues.index');
+    Route::get('/pending-dues/data', [PendingDueController::class, 'data'])
+        ->middleware('permission:pending_dues.view')
+        ->name('pending-dues.data');
+    Route::get('/pending-dues/today', [PendingDueController::class, 'today'])
+        ->middleware('permission:pending_dues.view')
+        ->name('pending-dues.today');
+    Route::get('/pending-dues/weekly', [PendingDueController::class, 'weekly'])
+        ->middleware('permission:pending_dues.view')
+        ->name('pending-dues.weekly');
+    Route::get('/pending-dues/monthly', [PendingDueController::class, 'monthly'])
+        ->middleware('permission:pending_dues.view')
+        ->name('pending-dues.monthly');
+    Route::get('/pending-dues/overdue', [PendingDueController::class, 'overdue'])
+        ->middleware('permission:pending_dues.view')
+        ->name('pending-dues.overdue');
+    Route::post('/pending-dues/bulk-reminder', [PendingDueController::class, 'bulkReminder'])
+        ->middleware('permission:pending_dues.reminder')
+        ->name('pending-dues.bulk-reminder');
+    Route::post('/pending-dues/{installment}/followup', [PendingDueController::class, 'followup'])
+        ->middleware('permission:pending_dues.followup')
+        ->name('pending-dues.followup');
+    Route::post('/pending-dues/{installment}/reminder', [PendingDueController::class, 'sendReminder'])
+        ->middleware('permission:pending_dues.reminder')
+        ->name('pending-dues.reminder');
+
     Route::get('/ledgers', [LedgerController::class, 'index'])
         ->middleware('permission:ledger.view')
         ->name('ledgers.index');

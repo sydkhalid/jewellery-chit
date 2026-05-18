@@ -23,6 +23,12 @@ class ChitInstallment extends Model
         'late_fee',
         'status',
         'paid_date',
+        'followup_status',
+        'promise_to_pay_date',
+        'followup_remarks',
+        'last_followup_at',
+        'reminder_count',
+        'last_reminder_at',
     ];
 
     protected function casts(): array
@@ -35,6 +41,10 @@ class ChitInstallment extends Model
             'balance_amount' => 'decimal:2',
             'late_fee' => 'decimal:2',
             'paid_date' => 'date',
+            'promise_to_pay_date' => 'date',
+            'last_followup_at' => 'datetime',
+            'reminder_count' => 'integer',
+            'last_reminder_at' => 'datetime',
         ];
     }
 

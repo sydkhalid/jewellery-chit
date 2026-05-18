@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\InstallmentController;
 use App\Http\Controllers\Api\LedgerController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\PendingDueController;
 use App\Http\Controllers\Api\ReceiptController;
 use Illuminate\Support\Facades\Route;
 
@@ -46,4 +47,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/receipts/{receipt}/download', [ReceiptController::class, 'download'])->middleware('can:receipts.pdf');
 
     Route::get('/ledger', [LedgerController::class, 'index'])->middleware('can:ledger.view');
+
+    Route::get('/pending-dues', [PendingDueController::class, 'index'])->middleware('can:pending_dues.view');
+    Route::get('/pending-dues/today', [PendingDueController::class, 'today'])->middleware('can:pending_dues.view');
+    Route::get('/pending-dues/weekly', [PendingDueController::class, 'weekly'])->middleware('can:pending_dues.view');
+    Route::get('/pending-dues/monthly', [PendingDueController::class, 'monthly'])->middleware('can:pending_dues.view');
+    Route::get('/pending-dues/overdue', [PendingDueController::class, 'overdue'])->middleware('can:pending_dues.view');
+    Route::get('/pending-dues/staff-summary', [PendingDueController::class, 'staffSummary'])->middleware('can:pending_dues.view');
+    Route::get('/pending-dues/branch-summary', [PendingDueController::class, 'branchSummary'])->middleware('can:pending_dues.view');
 });

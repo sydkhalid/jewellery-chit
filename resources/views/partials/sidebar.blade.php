@@ -83,10 +83,13 @@
             'title' => 'Pending Dues',
             'icon' => 'bi-hourglass-split',
             'permissions' => ['pending_dues.view', 'pending_dues.followup', 'pending_dues.reminder'],
+            'active' => request()->routeIs('pending-dues.*'),
             'children' => [
-                ['title' => 'Due List', 'permission' => 'pending_dues.view'],
-                ['title' => 'Follow-up Queue', 'permission' => 'pending_dues.followup'],
-                ['title' => 'Reminder Queue', 'permission' => 'pending_dues.reminder'],
+                ['title' => 'All Pending Dues', 'permission' => 'pending_dues.view', 'route' => route('pending-dues.index'), 'active' => request()->routeIs('pending-dues.index')],
+                ['title' => 'Today Dues', 'permission' => 'pending_dues.view', 'route' => route('pending-dues.today'), 'active' => request()->routeIs('pending-dues.today')],
+                ['title' => 'Weekly Dues', 'permission' => 'pending_dues.view', 'route' => route('pending-dues.weekly'), 'active' => request()->routeIs('pending-dues.weekly')],
+                ['title' => 'Monthly Dues', 'permission' => 'pending_dues.view', 'route' => route('pending-dues.monthly'), 'active' => request()->routeIs('pending-dues.monthly')],
+                ['title' => 'Overdue Dues', 'permission' => 'pending_dues.view', 'route' => route('pending-dues.overdue'), 'active' => request()->routeIs('pending-dues.overdue')],
             ],
         ],
         [

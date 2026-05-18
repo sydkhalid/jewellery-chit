@@ -830,6 +830,75 @@ if (ledgersTableElement && window.jQuery?.fn?.DataTable) {
     });
 }
 
+const pendingDuesTableElement = document.getElementById('pending-dues-table');
+let pendingDuesTable = null;
+
+if (pendingDuesTableElement && window.jQuery?.fn?.DataTable) {
+    const formatPendingMoney = (value) => `Rs. ${Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    pendingDuesTable = window.jQuery(pendingDuesTableElement).DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: pendingDuesTableElement.dataset.source,
+            data: (payload) => {
+                payload.due_type = document.getElementById('pending-due-type-filter')?.value || '';
+                payload.customer_id = document.getElementById('pending-customer-filter')?.value || '';
+                payload.staff_id = document.getElementById('pending-staff-filter')?.value || '';
+                payload.branch_id = document.getElementById('pending-branch-filter')?.value || '';
+                payload.scheme_id = document.getElementById('pending-scheme-filter')?.value || '';
+                payload.status = document.getElementById('pending-status-filter')?.value || '';
+                payload.followup_status = document.getElementById('pending-followup-filter')?.value || '';
+                payload.from_date = document.getElementById('pending-from-filter')?.value || '';
+                payload.to_date = document.getElementById('pending-to-filter')?.value || '';
+            },
+        },
+        order: [[1, 'asc']],
+        columns: [
+            { data: 'select_box', name: 'select_box', orderable: false, searchable: false },
+            { data: 'due_date', name: 'due_date' },
+            { data: 'customer_code', name: 'enrollment.customer.customer_code' },
+            { data: 'customer_name', name: 'enrollment.customer.name' },
+            { data: 'mobile', name: 'enrollment.customer.mobile' },
+            { data: 'chit_no', name: 'enrollment.chit_no' },
+            { data: 'scheme_name', name: 'enrollment.scheme.name' },
+            { data: 'installment_no', name: 'installment_no' },
+            { data: 'due_amount', name: 'due_amount', className: 'text-end', render: formatPendingMoney },
+            { data: 'paid_amount', name: 'paid_amount', className: 'text-end', render: formatPendingMoney },
+            { data: 'balance_amount', name: 'balance_amount', className: 'text-end', render: formatPendingMoney },
+            { data: 'late_fee', name: 'late_fee', className: 'text-end', render: formatPendingMoney },
+            { data: 'status_badge', name: 'status', orderable: true, searchable: false },
+            { data: 'staff_name', name: 'enrollment.assignedStaff.name' },
+            { data: 'branch_name', name: 'enrollment.branch.name' },
+            { data: 'followup_badge', name: 'followup_status', orderable: true, searchable: false },
+            { data: 'promise_to_pay_date', name: 'promise_to_pay_date' },
+            { data: 'actions', name: 'actions', orderable: false, searchable: false, className: 'text-end' },
+        ],
+    });
+
+    [
+        'pending-due-type-filter',
+        'pending-customer-filter',
+        'pending-staff-filter',
+        'pending-branch-filter',
+        'pending-scheme-filter',
+        'pending-status-filter',
+        'pending-followup-filter',
+        'pending-from-filter',
+        'pending-to-filter',
+    ].forEach((id) => {
+        document.getElementById(id)?.addEventListener('change', () => {
+            pendingDuesTable?.ajax.reload();
+        });
+    });
+}
+
+document.querySelector('[data-pending-due-select-all]')?.addEventListener('change', (event) => {
+    document.querySelectorAll('[data-pending-due-select]').forEach((checkbox) => {
+        checkbox.checked = event.target.checked;
+    });
+});
+
 document.addEventListener('click', async (event) => {
     const button = event.target.closest('[data-customer-action]');
 
@@ -1226,6 +1295,203 @@ document.addEventListener('click', async (event) => {
         } else {
             window.location.reload();
         }
+    } catch (error) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Action needed',
+            text: error.message,
+        });
+    }
+});
+
+document.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-pending-due-action]');
+
+    if (!button) {
+        return;
+    }
+
+    const action = button.dataset.pendingDueAction;
+
+    if (action === 'followup') {
+        const modalElement = document.getElementById('pendingDueFollowupModal');
+        const form = modalElement?.querySelector('form');
+
+        if (!modalElement || !form) {
+            return;
+        }
+
+        clearFormErrors(form);
+        form.action = button.dataset.url;
+        form.querySelector('[name="followup_status"]').value = button.dataset.followupStatus || 'pending';
+        form.querySelector('[name="promise_to_pay_date"]').value = button.dataset.promiseDate || '';
+        form.querySelector('[name="remarks"]').value = button.dataset.remarks || '';
+        Modal.getOrCreateInstance(modalElement).show();
+
+        return;
+    }
+
+    const result = await Swal.fire({
+        icon: 'question',
+        title: 'Send reminder?',
+        text: 'Choose the reminder channel for this pending installment.',
+        input: 'select',
+        inputOptions: {
+            whatsapp: 'WhatsApp',
+            sms: 'SMS',
+        },
+        inputValue: 'whatsapp',
+        showCancelButton: true,
+        confirmButtonText: 'Send',
+        confirmButtonColor: '#198754',
+    });
+
+    if (!result.isConfirmed) {
+        return;
+    }
+
+    try {
+        const response = await fetch(button.dataset.url, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            body: JSON.stringify({ channel: result.value }),
+        });
+        const payload = await response.json();
+
+        if (!response.ok || !payload.success) {
+            const firstError = payload.data?.errors ? Object.values(payload.data.errors).flat()[0] : null;
+            throw new Error(firstError || payload.message || 'Unable to send reminder');
+        }
+
+        await Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: payload.message,
+            timer: 1800,
+            showConfirmButton: false,
+        });
+
+        pendingDuesTable?.ajax.reload(null, false);
+    } catch (error) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Action needed',
+            text: error.message,
+        });
+    }
+});
+
+document.getElementById('pendingDueFollowupModal')?.querySelector('form')?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const form = event.currentTarget;
+    clearFormErrors(form);
+
+    try {
+        const response = await fetch(form.action, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            body: new FormData(form),
+        });
+        const payload = await response.json();
+
+        if (!response.ok || !payload.success) {
+            if (response.status === 422 && payload.data?.errors) {
+                applyFormErrors(form, payload.data.errors);
+            }
+
+            throw new Error(payload.message || 'Unable to update follow-up');
+        }
+
+        Modal.getInstance(document.getElementById('pendingDueFollowupModal'))?.hide();
+
+        await Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: payload.message,
+            timer: 1800,
+            showConfirmButton: false,
+        });
+
+        pendingDuesTable?.ajax.reload(null, false);
+    } catch (error) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Action needed',
+            text: error.message,
+        });
+    }
+});
+
+document.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-pending-due-bulk]');
+
+    if (!button || !pendingDuesTableElement) {
+        return;
+    }
+
+    const selectedIds = Array.from(document.querySelectorAll('[data-pending-due-select]:checked')).map((checkbox) => checkbox.value);
+
+    if (selectedIds.length === 0) {
+        Swal.fire({
+            icon: 'info',
+            title: 'Select dues',
+            text: 'Choose at least one pending due to send reminders.',
+        });
+
+        return;
+    }
+
+    const channel = button.dataset.channel || 'whatsapp';
+    const result = await Swal.fire({
+        icon: 'warning',
+        title: `Send ${channel} reminders?`,
+        text: `${selectedIds.length} pending due reminders will be queued as placeholders.`,
+        showCancelButton: true,
+        confirmButtonText: 'Send',
+        confirmButtonColor: '#198754',
+    });
+
+    if (!result.isConfirmed) {
+        return;
+    }
+
+    try {
+        const response = await fetch(pendingDuesTableElement.dataset.bulkUrl, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            body: JSON.stringify({
+                installment_ids: selectedIds,
+                channel,
+            }),
+        });
+        const payload = await response.json();
+
+        if (!response.ok || !payload.success) {
+            const firstError = payload.data?.errors ? Object.values(payload.data.errors).flat()[0] : null;
+            throw new Error(firstError || payload.message || 'Unable to send bulk reminders');
+        }
+
+        await Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: payload.message,
+            timer: 1800,
+            showConfirmButton: false,
+        });
+
+        pendingDuesTable?.ajax.reload(null, false);
     } catch (error) {
         Swal.fire({
             icon: 'error',
