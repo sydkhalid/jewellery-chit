@@ -26,6 +26,7 @@ class ChitEnrollment extends Model
         'monthly_due_date',
         'maturity_date',
         'agreement_file',
+        'remarks',
         'total_months',
         'monthly_amount',
         'total_payable',

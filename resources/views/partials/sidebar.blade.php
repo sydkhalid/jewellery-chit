@@ -13,36 +13,40 @@
             'title' => 'Customers',
             'icon' => 'bi-people',
             'permissions' => ['customers.view', 'customers.create', 'customers.edit', 'customers.delete', 'customers.deactivate', 'customers.documents', 'customers.ledger'],
+            'active' => request()->routeIs('customers.*'),
             'children' => [
-                ['title' => 'Customer List', 'permission' => 'customers.view'],
-                ['title' => 'Add Customer', 'permission' => 'customers.create'],
+                ['title' => 'Customer List', 'permission' => 'customers.view', 'route' => route('customers.index'), 'active' => request()->routeIs('customers.index', 'customers.show', 'customers.edit', 'customers.ledger', 'customers.payment-history', 'customers.outstanding')],
+                ['title' => 'Add Customer', 'permission' => 'customers.create', 'route' => route('customers.create'), 'active' => request()->routeIs('customers.create')],
             ],
         ],
         [
             'title' => 'Chit Schemes',
             'icon' => 'bi-diagram-3',
             'permissions' => ['schemes.view', 'schemes.create', 'schemes.edit', 'schemes.delete', 'schemes.status'],
+            'active' => request()->routeIs('chit-schemes.*'),
             'children' => [
-                ['title' => 'Scheme List', 'permission' => 'schemes.view'],
-                ['title' => 'Create Scheme', 'permission' => 'schemes.create'],
+                ['title' => 'Scheme List', 'permission' => 'schemes.view', 'route' => route('chit-schemes.index'), 'active' => request()->routeIs('chit-schemes.index', 'chit-schemes.show', 'chit-schemes.edit')],
+                ['title' => 'Add Scheme', 'permission' => 'schemes.create', 'route' => route('chit-schemes.create'), 'active' => request()->routeIs('chit-schemes.create')],
             ],
         ],
         [
             'title' => 'Chit Enrollments',
             'icon' => 'bi-person-check',
             'permissions' => ['enrollments.view', 'enrollments.create', 'enrollments.edit', 'enrollments.delete', 'enrollments.close', 'enrollments.cancel'],
+            'active' => request()->routeIs('chit-enrollments.*'),
             'children' => [
-                ['title' => 'Enrollment List', 'permission' => 'enrollments.view'],
-                ['title' => 'New Enrollment', 'permission' => 'enrollments.create'],
+                ['title' => 'Enrollment List', 'permission' => 'enrollments.view', 'route' => route('chit-enrollments.index'), 'active' => request()->routeIs('chit-enrollments.index', 'chit-enrollments.show', 'chit-enrollments.edit')],
+                ['title' => 'New Enrollment', 'permission' => 'enrollments.create', 'route' => route('chit-enrollments.create'), 'active' => request()->routeIs('chit-enrollments.create')],
             ],
         ],
         [
             'title' => 'Installments',
             'icon' => 'bi-calendar2-check',
             'permissions' => ['installments.view', 'installments.generate', 'installments.edit', 'installments.status'],
+            'active' => request()->routeIs('installments.*', 'chit-enrollments.installments*'),
             'children' => [
-                ['title' => 'Installment Schedule', 'permission' => 'installments.view'],
-                ['title' => 'Generate Installments', 'permission' => 'installments.generate'],
+                ['title' => 'Installment List', 'permission' => 'installments.view', 'route' => route('installments.index'), 'active' => request()->routeIs('installments.*', 'chit-enrollments.installments*') && request('status') !== 'overdue'],
+                ['title' => 'Overdue Installments', 'permission' => 'installments.view', 'route' => route('installments.index', ['status' => 'overdue']), 'active' => request()->routeIs('installments.index') && request('status') === 'overdue'],
             ],
         ],
         [
@@ -195,7 +199,7 @@
                 $visibleChildren = collect($group['children'])->filter(fn (array $child): bool => $canSeeChild($child));
                 $collapseId = 'sidebar-menu-'.$index;
                 $hasChildren = $visibleChildren->isNotEmpty();
-                $isActive = $group['active'] ?? false;
+                $isActive = ($group['active'] ?? false) || $visibleChildren->contains(fn (array $child): bool => $child['active'] ?? false);
             @endphp
 
             @if (! $hasChildren)
@@ -205,16 +209,16 @@
                 </a>
             @else
                 <div class="admin-nav-group">
-                    <button class="admin-nav-link admin-nav-toggle collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#{{ $collapseId }}" aria-expanded="false" aria-controls="{{ $collapseId }}">
+                    <button class="admin-nav-link admin-nav-toggle {{ $isActive ? 'active' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#{{ $collapseId }}" aria-expanded="{{ $isActive ? 'true' : 'false' }}" aria-controls="{{ $collapseId }}">
                         <i class="bi {{ $group['icon'] }}"></i>
                         <span>{{ $group['title'] }}</span>
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </button>
 
-                    <div class="collapse" id="{{ $collapseId }}">
+                    <div class="collapse {{ $isActive ? 'show' : '' }}" id="{{ $collapseId }}">
                         <div class="admin-subnav">
                             @foreach ($visibleChildren as $child)
-                                <a href="{{ $child['route'] ?? '#' }}" class="admin-subnav-link">
+                                <a href="{{ $child['route'] ?? '#' }}" class="admin-subnav-link {{ ($child['active'] ?? false) ? 'active' : '' }}">
                                     {{ $child['title'] }}
                                 </a>
                             @endforeach
