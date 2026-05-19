@@ -1,0 +1,4 @@
+[build]
+
+[build.variables]
+RAILPACK_PHP_EXTENSIONS = "gd zip"
