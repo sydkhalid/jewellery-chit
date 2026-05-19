@@ -1,0 +1,2 @@
+chit_no,customer_code,customer_mobile,scheme_code,branch_code,assigned_staff_email,start_date,monthly_due_date,maturity_date,total_months,monthly_amount,total_payable,total_paid,last_paid_date,status,remarks
+CHIT-LIVE-001,CUS-LIVE-001,,SCH-LIVE-001,MAIN,staff@example.com,2026-05-01,1,,12,3000,36000,0,,active,Opening live chit account

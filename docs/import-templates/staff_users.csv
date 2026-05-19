@@ -1,0 +1,2 @@
+name,email,mobile,role,branch_code,password,status
+Staff Name,staff-live@example.com,9000000101,Staff,MAIN,ChangeThisPassword123!,active

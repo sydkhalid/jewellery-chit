@@ -1,0 +1,11 @@
+key,value,type,group_name
+shop_name,Jewellery Chit,text,shop
+shop_address,Shop address,text,shop
+shop_mobile,9999999999,text,shop
+gstin,,text,tax
+receipt_prefix,RCPT,text,numbering
+terms_and_conditions,Please keep this receipt for future reference.,text,documents
+backup_enabled,1,boolean,backup
+backup_disk,local,text,backup
+whatsapp_enabled,1,boolean,whatsapp
+sms_enabled,0,boolean,sms

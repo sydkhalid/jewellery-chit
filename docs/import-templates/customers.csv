@@ -1,0 +1,2 @@
+customer_code,name,mobile,alternate_mobile,email,aadhaar_no,pan_no,address,city,state,pincode,status,nominee_name,nominee_relationship,nominee_mobile,nominee_address,nominee_aadhaar_no
+CUS-LIVE-001,Customer Name,9000000001,,customer@example.com,,,,Chennai,Tamil Nadu,600001,active,Nominee Name,Family,9000000099,Same address,
