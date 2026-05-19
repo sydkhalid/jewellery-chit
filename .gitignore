@@ -12,12 +12,16 @@
 /.vscode
 /.zed
 /auth.json
+/database/dusk.sqlite
 /node_modules
+/playwright-report
 /public/build
 /public/hot
 /public/storage
 /storage/*.key
 /storage/pail
+/test-results
+/tests/Playwright/report
 /vendor
 Homestead.json
 Homestead.yaml

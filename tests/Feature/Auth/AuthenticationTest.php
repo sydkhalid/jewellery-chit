@@ -16,7 +16,8 @@ class AuthenticationTest extends TestCase
         $response = $this->get('/login');
 
         $response->assertStatus(200)
-            ->assertSee('Jewellery Chit Admin')
+            ->assertSee('Jewellery Chit')
+            ->assertSee('Secure sign in')
             ->assertSee('admin, manager, or staff account');
     }
 
