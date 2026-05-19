@@ -2,6 +2,9 @@
   "$schema": "https://schema.railpack.com",
   "provider": "php",
   "deploy": {
-    "aptPackages": ["default-mysql-client"]
+    "aptPackages": ["default-mysql-client"],
+    "variables": {
+      "RAILPACK_SKIP_MIGRATIONS": "true"
+    }
   }
 }
