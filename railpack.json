@@ -1,3 +1,4 @@
 {
-  "$schema": "https://schema.railpack.com"
+  "$schema": "https://schema.railpack.com",
+  "phpExtensions": ["gd", "zip"]
 }
