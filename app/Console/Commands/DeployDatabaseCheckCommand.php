@@ -24,13 +24,30 @@ class DeployDatabaseCheckCommand extends Command
         $urlConfigured = filled($config['url'] ?? null);
 
         $this->line(sprintf(
-            'Database target: connection=%s host=%s port=%s database=%s url=%s',
+            'Database target: env=%s connection=%s host=%s port=%s database=%s url=%s',
+            app()->environment(),
             $connection,
             $host !== '' ? $host : '(none)',
             $port !== '' ? $port : '(none)',
             $database !== '' ? $database : '(none)',
             $urlConfigured ? 'set' : 'unset',
         ));
+
+        if (app()->environment('testing') || ($connection === 'sqlite' && $database === ':memory:')) {
+            $this->error('Test environment variables are active during deployment.');
+            $this->line('Remove .env.testing values from the Railway app service variables.');
+            $this->line('Set production variables instead:');
+            $this->line('APP_ENV=production');
+            $this->line('APP_DEBUG=false');
+            $this->line('DB_CONNECTION=mysql');
+            $this->line('DB_HOST=${{MySQL.MYSQLHOST}}');
+            $this->line('DB_PORT=${{MySQL.MYSQLPORT}}');
+            $this->line('DB_DATABASE=${{MySQL.MYSQLDATABASE}}');
+            $this->line('DB_USERNAME=${{MySQL.MYSQLUSER}}');
+            $this->line('DB_PASSWORD=${{MySQL.MYSQLPASSWORD}}');
+
+            return self::FAILURE;
+        }
 
         if ($connection === 'mysql' && ! $urlConfigured && $host === '127.0.0.1' && $database === 'laravel') {
             $this->error('Railway MySQL variables are not linked to this app service.');
