@@ -8,10 +8,12 @@ use App\Http\Controllers\Api\ChitSchemeController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\GoldRateController;
 use App\Http\Controllers\Api\InstallmentController;
+use App\Http\Controllers\Api\IntegrationWebhookController;
 use App\Http\Controllers\Api\JewelleryInvoiceController;
 use App\Http\Controllers\Api\LedgerController;
 use App\Http\Controllers\Api\MaturityClosingController;
 use App\Http\Controllers\Api\MessageController;
+use App\Http\Controllers\Api\PaymentGatewayController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PendingDueController;
 use App\Http\Controllers\Api\ReceiptController;
@@ -22,6 +24,18 @@ use App\Http\Controllers\Api\StaffController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
+
+Route::prefix('webhooks')->name('api.webhooks.')->group(function () {
+    Route::post('/whatsapp/twilio', [IntegrationWebhookController::class, 'twilioWhatsapp'])->name('whatsapp.twilio');
+    Route::get('/whatsapp/meta', [IntegrationWebhookController::class, 'metaWhatsappVerify'])->name('whatsapp.meta.verify');
+    Route::post('/whatsapp/meta', [IntegrationWebhookController::class, 'metaWhatsapp'])->name('whatsapp.meta');
+    Route::post('/sms/msg91', [IntegrationWebhookController::class, 'msg91Sms'])->name('sms.msg91');
+    Route::post('/sms/textlocal', [IntegrationWebhookController::class, 'textlocalSms'])->name('sms.textlocal');
+    Route::post('/payments/razorpay', [IntegrationWebhookController::class, 'razorpay'])->name('payments.razorpay');
+    Route::post('/payments/pine-labs', [IntegrationWebhookController::class, 'pineLabs'])->name('payments.pine-labs');
+    Route::post('/payments/payu', [IntegrationWebhookController::class, 'payu'])->name('payments.payu');
+    Route::post('/payments/upi-qr', [IntegrationWebhookController::class, 'upiQr'])->name('payments.upi-qr');
+});
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -84,6 +98,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/payments', [PaymentController::class, 'index'])->middleware('can:payments.view');
     Route::post('/payments', [PaymentController::class, 'store'])->middleware('can:payments.create');
+    Route::post('/payments/gateway/order', [PaymentGatewayController::class, 'createOrder'])->middleware('can:payments.create');
+    Route::post('/payments/gateway/{transaction}/retry', [PaymentGatewayController::class, 'retry'])->middleware('can:payments.create');
     Route::get('/payments/{payment}', [PaymentController::class, 'show'])->middleware('can:payments.view');
 
     Route::get('/receipts', [ReceiptController::class, 'index'])->middleware('can:receipts.view');

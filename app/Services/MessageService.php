@@ -12,6 +12,7 @@ use App\Models\Notification;
 use App\Models\ShopSetting;
 use App\Models\SmsLog;
 use App\Models\WhatsappLog;
+use App\Services\Integrations\MessageIntegrationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
@@ -21,6 +22,11 @@ use Illuminate\Validation\ValidationException;
 
 class MessageService
 {
+    public function __construct(
+        private readonly MessageIntegrationService $messageIntegrations
+    ) {
+    }
+
     public const MESSAGE_TYPES = [
         'due_reminder',
         'receipt',
@@ -295,7 +301,7 @@ class MessageService
                 ? WhatsappLog::create($this->logPayload($data))
                 : SmsLog::create($this->logPayload($data));
 
-            $providerResponse = $this->placeholderProviderResponse($channel, $data);
+            $providerResponse = $this->messageIntegrations->send($channel, $data, $log);
             $status = $providerResponse['success'] ? 'sent' : 'failed';
             $oldValues = $log->toArray();
 
@@ -345,10 +351,12 @@ class MessageService
 
         return DB::transaction(function () use ($log, $channel): array {
             $oldValues = $log->toArray();
-            $providerResponse = $this->placeholderProviderResponse($channel, [
+            $providerResponse = $this->messageIntegrations->send($channel, [
                 'mobile' => $log->mobile,
                 'message' => $log->message,
-            ]);
+                'message_type' => $log->message_type ?? 'general',
+                'customer_id' => $log->customer_id,
+            ], $log, true);
             $status = $providerResponse['success'] ? 'sent' : 'failed';
 
             $log->update([
@@ -442,26 +450,6 @@ class MessageService
             'status' => 'pending',
             'retry_count' => 0,
             'sent_at' => null,
-        ];
-    }
-
-    /**
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
-    private function placeholderProviderResponse(string $channel, array $data): array
-    {
-        $enabled = (bool) ShopSetting::getByKey("{$channel}_enabled", false);
-        $apiUrl = ShopSetting::getByKey("{$channel}_api_url");
-
-        return [
-            'success' => true,
-            'provider' => 'placeholder',
-            'channel' => $channel,
-            'enabled' => $enabled,
-            'api_url_configured' => filled($apiUrl),
-            'mobile' => $data['mobile'],
-            'message' => 'Placeholder '.$channel.' provider accepted the message.',
         ];
     }
 

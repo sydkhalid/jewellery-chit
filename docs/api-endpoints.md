@@ -66,6 +66,7 @@ Unauthorized:
 - Enrollments: `GET /api/chit-enrollments`, `POST /api/chit-enrollments`, `GET /api/chit-enrollments/{enrollment}`
 - Installments: `GET /api/installments`, `GET /api/chit-enrollments/{enrollment}/installments`
 - Payments: `GET /api/payments`, `POST /api/payments`, `GET /api/payments/{payment}`
+- Payment gateways: `POST /api/payments/gateway/order`, `POST /api/payments/gateway/{transaction}/retry`
 - Receipts: `GET /api/receipts`, `GET /api/receipts/{receipt}`, `GET /api/receipts/{receipt}/download`
 - Ledger: `GET /api/ledger`, `GET /api/customers/{customer}/ledger`, `GET /api/chit-enrollments/{enrollment}/ledger`
 - Pending dues: `GET /api/pending-dues`, `GET /api/pending-dues/today`, `GET /api/pending-dues/weekly`, `GET /api/pending-dues/monthly`, `GET /api/pending-dues/overdue`
@@ -77,6 +78,14 @@ Unauthorized:
 - Reports: dashboard, collection, pending, staff collection, and branch collection summaries under `/api/reports/*`
 - Messages: `POST /api/messages/whatsapp`, `POST /api/messages/sms`, log and notification lists under `/api/messages/*`
 - Settings: `GET /api/settings`, `GET /api/settings/{key}`
+
+## Public Webhooks
+
+- WhatsApp: `POST /api/webhooks/whatsapp/twilio`, `GET|POST /api/webhooks/whatsapp/meta`
+- SMS: `POST /api/webhooks/sms/msg91`, `POST /api/webhooks/sms/textlocal`
+- Payments: `POST /api/webhooks/payments/razorpay`, `POST /api/webhooks/payments/pine-labs`, `POST /api/webhooks/payments/payu`, `POST /api/webhooks/payments/upi-qr`
+
+See `docs/integrations.md` for provider credentials, sandbox/live mode, and request examples.
 
 Paginated list response:
 
