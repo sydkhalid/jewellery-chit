@@ -6,6 +6,9 @@
     "keywords": ["laravel", "framework"],
     "license": "MIT",
     "require": {
+        "ext-gd": "*",
+        "ext-pdo_mysql": "*",
+        "ext-zip": "*",
         "php": "^8.2",
         "barryvdh/laravel-dompdf": "^3.1",
         "laravel/framework": "^12.0",

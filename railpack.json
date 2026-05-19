@@ -1,4 +1,11 @@
 {
   "$schema": "https://schema.railpack.com",
-  "phpExtensions": ["gd", "zip"]
+  "provider": "php",
+  "packages": {
+    "php": "8.2",
+    "node": "22"
+  },
+  "deploy": {
+    "aptPackages": ["default-mysql-client"]
+  }
 }
