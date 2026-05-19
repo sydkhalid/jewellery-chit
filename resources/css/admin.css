@@ -304,6 +304,50 @@
     gap: 10px;
 }
 
+.dashboard-hero-side {
+    align-items: stretch;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: min(360px, 100%);
+}
+
+.dashboard-hero-stats {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dashboard-hero-stat {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 8px;
+    color: #ffffff;
+    min-width: 0;
+    padding: 11px 12px;
+    text-decoration: none;
+}
+
+.dashboard-hero-stat:hover {
+    background: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+}
+
+.dashboard-hero-stat span {
+    color: #d7dde7;
+    display: block;
+    font-size: 11px;
+    font-weight: 800;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+}
+
+.dashboard-hero-stat strong {
+    display: block;
+    font-size: 15px;
+    overflow-wrap: anywhere;
+}
+
 .dashboard-card-grid {
     display: grid;
     gap: 16px;
@@ -861,11 +905,13 @@
 .admin-sidebar-backdrop {
     background: rgba(17, 24, 39, 0.48);
     bottom: 0;
-    display: none;
     left: 0;
+    opacity: 0;
+    pointer-events: none;
     position: fixed;
     right: 0;
     top: 0;
+    transition: opacity 0.2s ease;
     z-index: 1035;
 }
 
@@ -876,7 +922,7 @@
 
     .admin-sidebar {
         transform: translateX(-100%);
-        transition: transform 0.2s ease;
+        transition: transform 0.22s cubic-bezier(0.2, 0, 0, 1);
     }
 
     .admin-sidebar-open .admin-sidebar {
@@ -884,7 +930,8 @@
     }
 
     .admin-sidebar-open .admin-sidebar-backdrop {
-        display: block;
+        opacity: 1;
+        pointer-events: auto;
     }
 }
 
@@ -904,6 +951,11 @@
     .dashboard-hero {
         align-items: flex-start;
         flex-direction: column;
+    }
+
+    .dashboard-hero-side,
+    .dashboard-hero-stats {
+        width: 100%;
     }
 
     .customer-profile-grid {
@@ -943,6 +995,10 @@
 
     .dashboard-hero-actions .btn {
         width: 100%;
+    }
+
+    .dashboard-hero-stats {
+        grid-template-columns: 1fr;
     }
 
     .admin-footer {
@@ -1382,6 +1438,20 @@
     color: #111827;
 }
 
+.dataTables_wrapper .dt-layout-row {
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 12px;
+}
+
+.dataTables_wrapper .dt-layout-row:last-child {
+    margin: 12px 0 0;
+}
+
+.mobile-card-table td[data-label]::before {
+    content: "";
+}
+
 .form-label {
     color: var(--admin-dark);
     font-size: 13px;
@@ -1403,6 +1473,10 @@
 .is-submitting {
     opacity: 0.72;
     pointer-events: none;
+}
+
+.admin-submit-spinner {
+    vertical-align: -0.125em;
 }
 
 .badge,
@@ -1523,6 +1597,85 @@
     .dataTables_wrapper .dataTables_filter,
     .dataTables_wrapper .dataTables_length {
         text-align: left;
+    }
+
+    .dataTables_wrapper .dt-layout-row {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .dataTables_wrapper .dt-layout-cell,
+    .dataTables_wrapper .dt-search,
+    .dataTables_wrapper .dt-length {
+        width: 100%;
+    }
+
+    .dataTables_wrapper .dt-search input,
+    .dataTables_wrapper .dt-length select {
+        width: 100%;
+    }
+
+    .admin-card .mobile-card-table {
+        border-collapse: separate !important;
+        border-spacing: 0 10px !important;
+    }
+
+    .admin-card .mobile-card-table thead {
+        display: none;
+    }
+
+    .admin-card .mobile-card-table tbody,
+    .admin-card .mobile-card-table tr,
+    .admin-card .mobile-card-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .admin-card .mobile-card-table tbody tr {
+        background: var(--admin-surface);
+        border: 1px solid var(--admin-border);
+        border-radius: 8px;
+        box-shadow: var(--admin-shadow-sm);
+        margin-bottom: 10px;
+        overflow: hidden;
+    }
+
+    .admin-card .mobile-card-table tbody td {
+        align-items: flex-start;
+        border-bottom: 1px solid var(--admin-border);
+        display: flex;
+        gap: 14px;
+        justify-content: space-between;
+        min-height: 42px;
+        padding: 10px 12px;
+        text-align: right !important;
+        white-space: normal;
+    }
+
+    .admin-card .mobile-card-table tbody td:last-child {
+        border-bottom: 0;
+    }
+
+    .admin-card .mobile-card-table tbody td[data-label]::before {
+        color: var(--admin-muted);
+        content: attr(data-label);
+        flex: 0 0 42%;
+        font-size: 11px;
+        font-weight: 850;
+        line-height: 1.35;
+        text-align: left;
+        text-transform: uppercase;
+    }
+
+    .admin-card .mobile-card-table tbody td.dt-empty,
+    .admin-card .mobile-card-table tbody td.dataTables_empty {
+        display: block;
+        text-align: center !important;
+    }
+
+    .admin-card .mobile-card-table tbody td.dt-empty::before,
+    .admin-card .mobile-card-table tbody td.dataTables_empty::before {
+        display: none;
     }
 }
 

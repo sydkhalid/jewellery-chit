@@ -11,6 +11,8 @@ const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribut
 const root = document.documentElement;
 const themeStorageKey = 'jewellery-chit-admin-theme';
 const pageLoader = document.querySelector('[data-page-loader]');
+let activeLoadingCount = 0;
+let pageLoaderTimer = null;
 
 const applyAdminTheme = (theme) => {
     const nextTheme = theme === 'dark' ? 'dark' : 'light';
@@ -21,6 +23,11 @@ const applyAdminTheme = (theme) => {
 
     document.querySelectorAll('[data-theme-icon]').forEach((icon) => {
         icon.className = nextTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+    });
+
+    document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
+        button.setAttribute('aria-pressed', String(nextTheme === 'dark'));
+        button.setAttribute('title', nextTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
     });
 
     window.dispatchEvent(new CustomEvent('admin-theme-change', { detail: { theme: nextTheme } }));
@@ -35,7 +42,23 @@ document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
 });
 
 const setPageLoading = (isLoading) => {
-    pageLoader?.classList.toggle('is-visible', isLoading);
+    if (!pageLoader) {
+        return;
+    }
+
+    activeLoadingCount = Math.max(0, activeLoadingCount + (isLoading ? 1 : -1));
+
+    if (activeLoadingCount > 0) {
+        window.clearTimeout(pageLoaderTimer);
+        pageLoaderTimer = window.setTimeout(() => {
+            pageLoader.classList.add('is-visible');
+        }, 140);
+
+        return;
+    }
+
+    window.clearTimeout(pageLoaderTimer);
+    pageLoader.classList.remove('is-visible');
 };
 
 const nativeFetch = window.fetch.bind(window);
@@ -56,21 +79,68 @@ window.fetch = async (...args) => {
     }
 };
 
+window.addEventListener('pageshow', () => {
+    activeLoadingCount = 0;
+    setPageLoading(false);
+});
+
+document.addEventListener('click', (event) => {
+    const link = event.target.closest('a[href]');
+
+    if (
+        !link
+        || event.defaultPrevented
+        || event.button !== 0
+        || event.metaKey
+        || event.ctrlKey
+        || event.shiftKey
+        || event.altKey
+        || link.target === '_blank'
+        || link.hasAttribute('download')
+        || link.dataset.bsToggle
+        || link.closest('[data-no-page-loader]')
+    ) {
+        return;
+    }
+
+    const href = link.getAttribute('href') || '';
+
+    if (href.startsWith('#') || href.startsWith('javascript:')) {
+        return;
+    }
+
+    const url = new URL(link.href, window.location.href);
+
+    if (url.origin !== window.location.origin || url.href === window.location.href) {
+        return;
+    }
+
+    setPageLoading(true);
+});
+
+const openSidebar = () => {
+    body.classList.add('admin-sidebar-open');
+
+    if (window.matchMedia('(max-width: 1199.98px)').matches) {
+        document.querySelector('.admin-sidebar-close')?.focus({ preventScroll: true });
+    }
+};
+
+const closeSidebar = () => {
+    body.classList.remove('admin-sidebar-open');
+};
+
 document.querySelectorAll('[data-sidebar-toggle]').forEach((button) => {
-    button.addEventListener('click', () => {
-        body.classList.add('admin-sidebar-open');
-    });
+    button.addEventListener('click', openSidebar);
 });
 
 document.querySelectorAll('[data-sidebar-dismiss]').forEach((button) => {
-    button.addEventListener('click', () => {
-        body.classList.remove('admin-sidebar-open');
-    });
+    button.addEventListener('click', closeSidebar);
 });
 
 document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
-        body.classList.remove('admin-sidebar-open');
+        closeSidebar();
     }
 });
 
@@ -113,11 +183,13 @@ sidebarNav?.addEventListener('click', (event) => {
     const link = event.target.closest('a');
 
     if (link && window.matchMedia('(max-width: 1199.98px)').matches) {
-        body.classList.remove('admin-sidebar-open');
+        closeSidebar();
     }
 });
 
 if (window.jQuery?.fn?.DataTable) {
+    window.jQuery.fn.dataTable.ext.errMode = 'none';
+
     window.jQuery.extend(true, window.jQuery.fn.dataTable.defaults, {
         autoWidth: false,
         pageLength: 10,
@@ -128,7 +200,36 @@ if (window.jQuery?.fn?.DataTable) {
         },
     });
 
+    const hydrateResponsiveTableLabels = (table) => {
+        if (!table) {
+            return;
+        }
+
+        const headers = Array.from(table.querySelectorAll('thead th')).map((header) => header.textContent.trim().replace(/\s+/g, ' '));
+
+        if (headers.length === 0) {
+            return;
+        }
+
+        table.classList.add('mobile-card-table');
+
+        table.querySelectorAll('tbody tr').forEach((row) => {
+            Array.from(row.children).forEach((cell, index) => {
+                if (cell.hasAttribute('colspan') || cell.classList.contains('dt-empty') || cell.classList.contains('dataTables_empty')) {
+                    return;
+                }
+
+                cell.dataset.label = headers[index] || '';
+            });
+        });
+    };
+
+    document.querySelectorAll('.admin-card table.table').forEach(hydrateResponsiveTableLabels);
+
     window.jQuery(document)
+        .on('init.dt draw.dt', (event, settings) => {
+            hydrateResponsiveTableLabels(settings.nTable);
+        })
         .on('preXhr.dt', (event, settings) => {
             const table = settings.nTable;
             table?.closest('.admin-card')?.classList.add('is-table-loading');
@@ -138,8 +239,41 @@ if (window.jQuery?.fn?.DataTable) {
             const table = settings.nTable;
             table?.closest('.admin-card')?.classList.remove('is-table-loading');
             setPageLoading(false);
+        })
+        .on('error.dt', (event, settings, techNote, message) => {
+            Swal.fire({
+                icon: 'error',
+                title: 'Table loading failed',
+                text: message || 'Unable to load table records.',
+            });
         });
 }
+
+document.addEventListener('submit', (event) => {
+    if (event.defaultPrevented) {
+        return;
+    }
+
+    const form = event.target;
+
+    if (!(form instanceof HTMLFormElement) || form.dataset.ajaxForm !== undefined || form.dataset.noSubmitLoader !== undefined) {
+        return;
+    }
+
+    const submitter = event.submitter instanceof HTMLElement ? event.submitter : form.querySelector('[type="submit"]');
+
+    form.classList.add('is-submitting');
+
+    if (submitter) {
+        submitter.setAttribute('disabled', 'disabled');
+
+        if (!submitter.querySelector('.admin-submit-spinner')) {
+            submitter.insertAdjacentHTML('afterbegin', '<span class="spinner-border spinner-border-sm me-2 admin-submit-spinner" aria-hidden="true"></span>');
+        }
+    }
+
+    setPageLoading(true);
+});
 
 const flash = window.adminFlash || {};
 
@@ -249,7 +383,16 @@ const renderChart = (selector, options, seriesData = []) => {
     element.textContent = '';
     const chart = new ApexCharts(element, withChartTheme(options));
 
-    chart.render();
+    try {
+        Promise.resolve(chart.render()).then(() => {
+            element.classList.add('is-ready');
+        }).catch(() => {
+            showChartEmptyState(element);
+        });
+    } catch {
+        showChartEmptyState(element);
+    }
+
     chartInstances.push(chart);
 };
 

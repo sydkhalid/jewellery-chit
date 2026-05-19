@@ -5,6 +5,10 @@
 @section('page-eyebrow', 'Admin overview')
 
 @section('content')
+    @php
+        $heroStats = collect($summaryCards)->take(3);
+    @endphp
+
     <section class="dashboard-hero">
         <div>
             <p class="admin-eyebrow mb-2">Welcome, {{ auth()->user()->name }}</p>
@@ -16,23 +20,35 @@
                 <span>Updated: <strong>{{ $dashboardMeta['generated_at'] ?? now()->format('d M Y, h:i A') }}</strong></span>
             </div>
         </div>
-        <div class="dashboard-hero-actions">
-            @can('reports.view')
-                <a href="{{ route('reports.index') }}" class="btn btn-light">
-                    <i class="bi bi-download me-2"></i>Reports
-                </a>
-            @endcan
-            @can('payments.create')
-                <a href="{{ route('payments.create') }}" class="btn btn-warning">
-                    <i class="bi bi-plus-lg me-2"></i>Collect Payment
-                </a>
-            @endcan
+
+        <div class="dashboard-hero-side">
+            <div class="dashboard-hero-stats" aria-label="Dashboard quick stats">
+                @foreach ($heroStats as $stat)
+                    <a href="{{ $stat['url'] ?? '#' }}" class="dashboard-hero-stat">
+                        <span>{{ $stat['label'] }}</span>
+                        <strong>{{ $stat['value'] }}</strong>
+                    </a>
+                @endforeach
+            </div>
+
+            <div class="dashboard-hero-actions">
+                @can('reports.view')
+                    <a href="{{ route('reports.index') }}" class="btn btn-light">
+                        <i class="bi bi-download me-2"></i>Reports
+                    </a>
+                @endcan
+                @can('payments.create')
+                    <a href="{{ route('payments.create') }}" class="btn btn-warning">
+                        <i class="bi bi-plus-lg me-2"></i>Collect Payment
+                    </a>
+                @endcan
+            </div>
         </div>
     </section>
 
     <section class="dashboard-card-grid" aria-label="Dashboard summary">
         @foreach ($summaryCards as $card)
-            <a href="{{ $card['url'] ?? '#' }}" class="metric-card metric-card-{{ $card['tone'] }}">
+            <a href="{{ $card['url'] ?? '#' }}" class="metric-card metric-card-{{ $card['tone'] }}" aria-label="{{ $card['label'] }} {{ $card['value'] }}">
                 <div class="metric-icon">
                     <i class="bi {{ $card['icon'] }}"></i>
                 </div>

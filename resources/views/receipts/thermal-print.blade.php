@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $receipt->receipt_no }} Thermal Receipt</title>
     <style>
-        body { color: #111827; font-family: Arial, sans-serif; font-size: 11px; margin: 0; }
-        .thermal-receipt { margin: 0 auto; padding: 8px; width: 76mm; }
+        * { box-sizing: border-box; }
+        body { background: #f3f4f6; color: #111827; font-family: Arial, sans-serif; font-size: 11px; margin: 0; }
+        .thermal-receipt { background: #ffffff; box-shadow: 0 12px 30px rgba(17, 24, 39, 0.14); margin: 16px auto; padding: 8px; width: 76mm; }
         .center { text-align: center; }
         h1 { font-size: 16px; margin: 0 0 4px; }
         p { margin: 2px 0; }
@@ -19,7 +20,9 @@
         .copy { font-weight: 700; text-transform: uppercase; }
         @media print {
             @page { margin: 0; size: 80mm auto; }
-            .thermal-receipt { width: 76mm; }
+            body { background: #ffffff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .thermal-receipt { box-shadow: none; margin: 0 auto; width: 76mm; }
+            tr { break-inside: avoid; page-break-inside: avoid; }
         }
     </style>
 </head>

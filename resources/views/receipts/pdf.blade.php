@@ -5,6 +5,7 @@
     <title>{{ $receipt->receipt_no }} Receipt</title>
     <style>
         @page { margin: 22mm 18mm; }
+        * { box-sizing: border-box; }
         body { color: #111827; font-family: DejaVu Sans, sans-serif; font-size: 12px; margin: 0; }
         .receipt-document { width: 100%; }
         .receipt-header { border-bottom: 2px solid #111827; min-height: 66px; padding-bottom: 14px; width: 100%; }
@@ -41,6 +42,10 @@
         .receipt-footer > div:first-child { float: left; width: 62%; }
         .signature-box { float: right; text-align: right; width: 34%; }
         .signature-box span { border-top: 1px solid #111827; display: inline-block; margin-top: 50px; padding-top: 7px; }
+        @media print {
+            body { background: #ffffff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .receipt-document, .receipt-table tr, .receipt-summary, .receipt-footer { break-inside: avoid; page-break-inside: avoid; }
+        }
     </style>
 </head>
 <body>
