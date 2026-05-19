@@ -75,8 +75,8 @@
             'active' => request()->routeIs('ledgers.*', 'customers.ledger', 'chit-enrollments.ledger*'),
             'children' => [
                 ['title' => 'All Ledger', 'permission' => 'ledger.view', 'route' => route('ledgers.index'), 'active' => request()->routeIs('ledgers.*') && ! request('scope')],
-                ['title' => 'Customer Ledger', 'permission' => 'ledger.customer', 'route' => route('ledgers.index', ['scope' => 'customer']), 'active' => request()->routeIs('customers.ledger') || request('scope') === 'customer'],
-                ['title' => 'Chit Ledger', 'permission' => 'ledger.chit', 'route' => route('ledgers.index', ['scope' => 'chit']), 'active' => request()->routeIs('chit-enrollments.ledger*') || request('scope') === 'chit'],
+                ['title' => 'Customer Ledger', 'permission' => 'ledger.view', 'route' => route('ledgers.index', ['scope' => 'customer']), 'active' => request()->routeIs('customers.ledger') || request('scope') === 'customer'],
+                ['title' => 'Chit Ledger', 'permission' => 'ledger.view', 'route' => route('ledgers.index', ['scope' => 'chit']), 'active' => request()->routeIs('chit-enrollments.ledger*') || request('scope') === 'chit'],
             ],
         ],
         [
@@ -174,7 +174,7 @@
             'permissions' => ['messages.view', 'messages.send', 'messages.retry', 'messages.logs'],
             'active' => request()->routeIs('messages.*', 'whatsapp-logs.*', 'sms-logs.*'),
             'children' => [
-                ['title' => 'Message Dashboard', 'permission' => 'messages.view', 'route' => route('messages.index'), 'active' => request()->routeIs('messages.index')],
+                ['title' => 'Message Dashboard', 'permissions' => ['messages.view', 'messages.send'], 'route' => route('messages.index'), 'active' => request()->routeIs('messages.index')],
                 ['title' => 'WhatsApp Logs', 'permission' => 'messages.logs', 'route' => route('messages.whatsapp-logs'), 'active' => request()->routeIs('messages.whatsapp-logs', 'whatsapp-logs.*')],
                 ['title' => 'SMS Logs', 'permission' => 'messages.logs', 'route' => route('messages.sms-logs'), 'active' => request()->routeIs('messages.sms-logs', 'sms-logs.*')],
                 ['title' => 'Notifications', 'permission' => 'messages.view', 'route' => route('messages.notifications'), 'active' => request()->routeIs('messages.notifications')],
@@ -198,37 +198,52 @@
         ],
     ];
 
-    $canSeeGroup = function (array $group) use ($user): bool {
-        return ($user?->hasRole('Admin') ?? false)
-            || collect($group['permissions'])->contains(fn (string $permission): bool => $user?->can($permission) ?? false);
+    $permissionList = function (array $item): array {
+        return collect($item['permissions'] ?? [$item['permission'] ?? null])
+            ->filter()
+            ->values()
+            ->all();
     };
 
-    $canSeeChild = function (array $child) use ($user): bool {
-        return ($user?->hasRole('Admin') ?? false) || ($user?->can($child['permission']) ?? false);
+    $canSeeGroup = function (array $group) use ($user, $permissionList): bool {
+        return ($user?->hasRole('Admin') ?? false)
+            || collect($permissionList($group))->contains(fn (string $permission): bool => $user?->can($permission) ?? false);
+    };
+
+    $canSeeChild = function (array $child) use ($user, $permissionList): bool {
+        return ($user?->hasRole('Admin') ?? false)
+            || collect($permissionList($child))->contains(fn (string $permission): bool => $user?->can($permission) ?? false);
     };
 @endphp
 
 <aside class="admin-sidebar" aria-label="Admin sidebar">
     <div class="admin-brand">
-        <div class="admin-brand-mark">
-            <i class="bi bi-gem"></i>
+        <div class="d-flex align-items-center gap-3 min-w-0">
+            <div class="admin-brand-mark">
+                <i class="bi bi-gem"></i>
+            </div>
+            <div class="min-w-0">
+                <div class="admin-brand-name">Jewellery Chit</div>
+                <div class="admin-brand-subtitle">Maintenance Suite</div>
+            </div>
         </div>
-        <div>
-            <div class="admin-brand-name">Jewellery Chit</div>
-            <div class="admin-brand-subtitle">Maintenance Suite</div>
-        </div>
+        <button type="button" class="admin-sidebar-close d-xl-none" data-sidebar-dismiss aria-label="Close sidebar">
+            <i class="bi bi-x-lg"></i>
+        </button>
     </div>
 
     <nav class="admin-nav" id="adminSidebarNav">
         @foreach ($menuGroups as $index => $group)
-            @continue(! $canSeeGroup($group))
-
             @php
-                $visibleChildren = collect($group['children'])->filter(fn (array $child): bool => $canSeeChild($child));
+                $configuredChildren = collect($group['children']);
+                $visibleChildren = $configuredChildren->filter(fn (array $child): bool => $canSeeChild($child));
                 $collapseId = 'sidebar-menu-'.$index;
                 $hasChildren = $visibleChildren->isNotEmpty();
+                $isVisible = $configuredChildren->isNotEmpty() ? $hasChildren : $canSeeGroup($group);
                 $isActive = ($group['active'] ?? false) || $visibleChildren->contains(fn (array $child): bool => $child['active'] ?? false);
             @endphp
+
+            @continue(! $isVisible)
 
             @if (! $hasChildren)
                 <a href="{{ $group['route'] ?? '#' }}" class="admin-nav-link {{ $isActive ? 'active' : '' }}">
@@ -243,7 +258,7 @@
                         <i class="bi bi-chevron-down ms-auto"></i>
                     </button>
 
-                    <div class="collapse {{ $isActive ? 'show' : '' }}" id="{{ $collapseId }}" data-bs-parent="#adminSidebarNav">
+                    <div class="collapse {{ $isActive ? 'show' : '' }}" id="{{ $collapseId }}">
                         <div class="admin-subnav">
                             @foreach ($visibleChildren as $child)
                                 <a href="{{ $child['route'] ?? '#' }}" class="admin-subnav-link {{ ($child['active'] ?? false) ? 'active' : '' }}">

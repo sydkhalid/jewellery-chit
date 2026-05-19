@@ -7,6 +7,13 @@
 
         <title>@yield('title', 'Dashboard') | {{ config('app.name', 'Jewellery Chit') }}</title>
 
+        <script>
+            (function () {
+                var theme = localStorage.getItem('jewellery-chit-admin-theme') || 'light';
+                document.documentElement.dataset.theme = theme;
+            })();
+        </script>
+
         @vite(['resources/css/app.css', 'resources/css/admin.css', 'resources/js/app.js', 'resources/js/admin.js'])
         @stack('styles')
     </head>
@@ -32,6 +39,9 @@
         </div>
 
         <div class="admin-sidebar-backdrop" data-sidebar-dismiss></div>
+        <div class="admin-page-loader" data-page-loader aria-hidden="true">
+            <span class="admin-loader-ring"></span>
+        </div>
 
         @include('partials.alerts')
         @include('partials.scripts')

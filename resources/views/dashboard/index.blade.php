@@ -11,9 +11,9 @@
             <h2 class="dashboard-hero-title">Chit operations at a glance</h2>
             <p class="dashboard-hero-copy mb-0">Track collections, dues, enrollments, staff performance, and billing movement from one place.</p>
             <div class="dashboard-role-line mt-3">
-                Role: <strong>{{ auth()->user()->getRoleNames()->first() ?? 'No role assigned' }}</strong>
-                <span class="mx-2">|</span>
-                Updated: <strong>{{ $dashboardMeta['generated_at'] ?? now()->format('d M Y, h:i A') }}</strong>
+                <span>Role: <strong>{{ auth()->user()->getRoleNames()->first() ?? 'No role assigned' }}</strong></span>
+                <span class="dashboard-role-divider"></span>
+                <span>Updated: <strong>{{ $dashboardMeta['generated_at'] ?? now()->format('d M Y, h:i A') }}</strong></span>
             </div>
         </div>
         <div class="dashboard-hero-actions">
@@ -53,7 +53,9 @@
                     <p>{{ $dashboardMeta['collection_period'] ?? 'Current month' }}</p>
                 </div>
             </div>
-            <div id="staffWiseCollectionChart" class="dashboard-chart" data-chart-status></div>
+            <div id="staffWiseCollectionChart" class="dashboard-chart" data-chart-status>
+                <div class="skeleton-chart" aria-hidden="true"></div>
+            </div>
         </article>
 
         <article class="admin-card dashboard-chart-card">
@@ -63,7 +65,9 @@
                     <p>{{ $dashboardMeta['collection_period'] ?? 'Current month' }}</p>
                 </div>
             </div>
-            <div id="schemeWiseCollectionChart" class="dashboard-chart" data-chart-status></div>
+            <div id="schemeWiseCollectionChart" class="dashboard-chart" data-chart-status>
+                <div class="skeleton-chart" aria-hidden="true"></div>
+            </div>
         </article>
 
         <article class="admin-card dashboard-chart-card dashboard-chart-wide">
@@ -73,7 +77,9 @@
                     <p>Last six months from successful payments</p>
                 </div>
             </div>
-            <div id="monthlyCollectionTrendChart" class="dashboard-chart" data-chart-status></div>
+            <div id="monthlyCollectionTrendChart" class="dashboard-chart" data-chart-status>
+                <div class="skeleton-chart skeleton-chart-line" aria-hidden="true"></div>
+            </div>
         </article>
 
         <article class="admin-card dashboard-chart-card">
@@ -83,7 +89,9 @@
                     <p>{{ $dashboardMeta['collection_period'] ?? 'Current month' }}</p>
                 </div>
             </div>
-            <div id="paymentModeCollectionChart" class="dashboard-chart" data-chart-status></div>
+            <div id="paymentModeCollectionChart" class="dashboard-chart" data-chart-status>
+                <div class="skeleton-chart skeleton-chart-radial" aria-hidden="true"></div>
+            </div>
         </article>
     </section>
 

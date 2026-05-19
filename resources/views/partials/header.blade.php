@@ -16,6 +16,10 @@
     </div>
 
     <div class="d-flex align-items-center gap-2 gap-md-3">
+        <button type="button" class="btn btn-light admin-icon-btn" data-theme-toggle aria-label="Toggle dark mode">
+            <i class="bi bi-moon-stars" data-theme-icon></i>
+        </button>
+
         <button type="button" class="btn btn-light admin-icon-btn d-none d-md-inline-flex" aria-label="Notifications">
             <i class="bi bi-bell"></i>
         </button>

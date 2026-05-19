@@ -1,9 +1,60 @@
 import ApexCharts from 'apexcharts';
-import { Modal } from 'bootstrap';
+import { Collapse, Dropdown, Modal, Tab } from 'bootstrap';
 import Swal from 'sweetalert2';
+
+void Collapse;
+void Dropdown;
+void Tab;
 
 const body = document.body;
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+const root = document.documentElement;
+const themeStorageKey = 'jewellery-chit-admin-theme';
+const pageLoader = document.querySelector('[data-page-loader]');
+
+const applyAdminTheme = (theme) => {
+    const nextTheme = theme === 'dark' ? 'dark' : 'light';
+
+    root.dataset.theme = nextTheme;
+    body.dataset.theme = nextTheme;
+    localStorage.setItem(themeStorageKey, nextTheme);
+
+    document.querySelectorAll('[data-theme-icon]').forEach((icon) => {
+        icon.className = nextTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+    });
+
+    window.dispatchEvent(new CustomEvent('admin-theme-change', { detail: { theme: nextTheme } }));
+};
+
+applyAdminTheme(localStorage.getItem(themeStorageKey) || root.dataset.theme || 'light');
+
+document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
+    button.addEventListener('click', () => {
+        applyAdminTheme(root.dataset.theme === 'dark' ? 'light' : 'dark');
+    });
+});
+
+const setPageLoading = (isLoading) => {
+    pageLoader?.classList.toggle('is-visible', isLoading);
+};
+
+const nativeFetch = window.fetch.bind(window);
+let activeFetchCount = 0;
+
+window.fetch = async (...args) => {
+    activeFetchCount += 1;
+    setPageLoading(true);
+
+    try {
+        return await nativeFetch(...args);
+    } finally {
+        activeFetchCount = Math.max(0, activeFetchCount - 1);
+
+        if (activeFetchCount === 0) {
+            setPageLoading(false);
+        }
+    }
+};
 
 document.querySelectorAll('[data-sidebar-toggle]').forEach((button) => {
     button.addEventListener('click', () => {
@@ -15,6 +66,12 @@ document.querySelectorAll('[data-sidebar-dismiss]').forEach((button) => {
     button.addEventListener('click', () => {
         body.classList.remove('admin-sidebar-open');
     });
+});
+
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+        body.classList.remove('admin-sidebar-open');
+    }
 });
 
 const sidebarNav = document.getElementById('adminSidebarNav');
@@ -51,6 +108,38 @@ sidebarNav?.addEventListener('shown.bs.collapse', (event) => {
     keepSidebarItemVisible(openedGroup);
     window.setTimeout(() => keepSidebarItemVisible(openedGroup), 260);
 });
+
+sidebarNav?.addEventListener('click', (event) => {
+    const link = event.target.closest('a');
+
+    if (link && window.matchMedia('(max-width: 1199.98px)').matches) {
+        body.classList.remove('admin-sidebar-open');
+    }
+});
+
+if (window.jQuery?.fn?.DataTable) {
+    window.jQuery.extend(true, window.jQuery.fn.dataTable.defaults, {
+        autoWidth: false,
+        pageLength: 10,
+        language: {
+            processing: '<div class="datatable-loader"><span></span><strong>Loading records</strong></div>',
+            emptyTable: '<div class="empty-state empty-state-inline"><i class="bi bi-inbox"></i><h3>No records found</h3><p>Try changing the filters or add a new record.</p></div>',
+            zeroRecords: '<div class="empty-state empty-state-inline"><i class="bi bi-search"></i><h3>No matching records</h3><p>Adjust the search text or filters.</p></div>',
+        },
+    });
+
+    window.jQuery(document)
+        .on('preXhr.dt', (event, settings) => {
+            const table = settings.nTable;
+            table?.closest('.admin-card')?.classList.add('is-table-loading');
+            setPageLoading(true);
+        })
+        .on('xhr.dt error.dt', (event, settings) => {
+            const table = settings.nTable;
+            table?.closest('.admin-card')?.classList.remove('is-table-loading');
+            setPageLoading(false);
+        });
+}
 
 const flash = window.adminFlash || {};
 
@@ -100,6 +189,41 @@ const hasChartData = (series) => {
     return series.some((value) => Number(value) > 0);
 };
 
+const chartInstances = [];
+
+const currentChartTheme = () => ({
+    foreColor: root.dataset.theme === 'dark' ? '#cbd5e1' : '#475467',
+    gridColor: root.dataset.theme === 'dark' ? '#334155' : '#e6eaf0',
+    tooltipTheme: root.dataset.theme === 'dark' ? 'dark' : 'light',
+});
+
+const withChartTheme = (options) => {
+    const theme = currentChartTheme();
+
+    return {
+        ...options,
+        chart: {
+            ...options.chart,
+            foreColor: theme.foreColor,
+            animations: {
+                enabled: true,
+                easing: 'easeinout',
+                speed: 550,
+                ...(options.chart?.animations || {}),
+            },
+        },
+        grid: {
+            borderColor: theme.gridColor,
+            strokeDashArray: 4,
+            ...(options.grid || {}),
+        },
+        tooltip: {
+            theme: theme.tooltipTheme,
+            ...(options.tooltip || {}),
+        },
+    };
+};
+
 const showChartEmptyState = (element) => {
     element.innerHTML = `
         <div class="empty-state empty-state-inline">
@@ -123,8 +247,23 @@ const renderChart = (selector, options, seriesData = []) => {
     }
 
     element.textContent = '';
-    new ApexCharts(element, options).render();
+    const chart = new ApexCharts(element, withChartTheme(options));
+
+    chart.render();
+    chartInstances.push(chart);
 };
+
+window.addEventListener('admin-theme-change', () => {
+    const theme = currentChartTheme();
+
+    chartInstances.forEach((chart) => {
+        chart.updateOptions({
+            chart: { foreColor: theme.foreColor },
+            grid: { borderColor: theme.gridColor },
+            tooltip: { theme: theme.tooltipTheme },
+        }, false, true);
+    });
+});
 
 if (chartData) {
     renderChart('#staffWiseCollectionChart', {
@@ -261,6 +400,8 @@ const submitAjaxForm = async (form) => {
 
     const submitButton = form.querySelector('[type="submit"]');
     submitButton?.setAttribute('disabled', 'disabled');
+    form.classList.add('is-submitting');
+    setPageLoading(true);
 
     try {
         const response = await fetch(form.action, {
@@ -302,6 +443,8 @@ const submitAjaxForm = async (form) => {
         });
     } finally {
         submitButton?.removeAttribute('disabled');
+        form.classList.remove('is-submitting');
+        setPageLoading(false);
     }
 };
 
