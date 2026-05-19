@@ -10,13 +10,11 @@ use Spatie\Permission\PermissionRegistrar;
 class RolePermissionSeeder extends Seeder
 {
     /**
-     * Seed all role and permission records safely.
+     * @return array<string, list<string>>
      */
-    public function run(): void
+    public static function permissionGroups(): array
     {
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
-
-        $permissionGroups = [
+        return [
             'Dashboard' => [
                 'dashboard.view',
             ],
@@ -141,54 +139,42 @@ class RolePermissionSeeder extends Seeder
                 'backup.delete',
             ],
         ];
+    }
 
-        $permissions = collect($permissionGroups)->flatten()->values()->all();
-        $legacyPermissions = [
-            'billing.create',
-            'billing.edit',
-            'billing.view',
-            'branches.manage',
-            'branches.view',
-            'cashflow.export',
-            'communications.send',
-            'communications.view',
-            'dues.followup',
-            'dues.view',
-            'gold-rates.manage',
-            'gold-rates.view',
-            'installments.create',
-            'ledger.export',
-            'maturity.close',
-            'receipts.download',
-            'reports.export',
-            'staff.manage',
+    /**
+     * @return list<string>
+     */
+    public static function permissionNames(): array
+    {
+        return collect(static::permissionGroups())->flatten()->values()->all();
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function roleNames(): array
+    {
+        return ['Admin', 'Manager', 'Staff'];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function managerDeniedPermissions(): array
+    {
+        return [
+            'settings.backup',
+            'backup.delete',
+            'staff.delete',
         ];
+    }
 
-        Permission::whereIn('name', array_diff($legacyPermissions, $permissions))->delete();
-
-        foreach ($permissions as $permission) {
-            Permission::firstOrCreate([
-                'name' => $permission,
-                'guard_name' => 'web',
-            ]);
-        }
-
-        $adminRole = Role::firstOrCreate(['name' => 'Admin', 'guard_name' => 'web']);
-        $managerRole = Role::firstOrCreate(['name' => 'Manager', 'guard_name' => 'web']);
-        $staffRole = Role::firstOrCreate(['name' => 'Staff', 'guard_name' => 'web']);
-
-        $adminRole->syncPermissions($permissions);
-
-        $managerRole->syncPermissions(collect($permissions)
-            ->reject(fn (string $permission): bool => in_array($permission, [
-                'settings.backup',
-                'backup.delete',
-                'staff.delete',
-            ], true))
-            ->values()
-            ->all());
-
-        $staffRole->syncPermissions([
+    /**
+     * @return list<string>
+     */
+    public static function staffPermissionNames(): array
+    {
+        return [
             'dashboard.view',
             'customers.view',
             'customers.create',
@@ -209,7 +195,67 @@ class RolePermissionSeeder extends Seeder
             'pending_dues.followup',
             'pending_dues.reminder',
             'messages.send',
-        ]);
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function legacyPermissionNames(): array
+    {
+        return [
+            'billing.create',
+            'billing.edit',
+            'billing.view',
+            'branches.manage',
+            'branches.view',
+            'cashflow.export',
+            'communications.send',
+            'communications.view',
+            'dues.followup',
+            'dues.view',
+            'gold-rates.manage',
+            'gold-rates.view',
+            'installments.create',
+            'ledger.export',
+            'maturity.close',
+            'receipts.download',
+            'reports.export',
+            'staff.manage',
+        ];
+    }
+
+    /**
+     * Seed all role and permission records safely.
+     */
+    public function run(): void
+    {
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $permissions = static::permissionNames();
+        $legacyPermissions = static::legacyPermissionNames();
+
+        Permission::whereIn('name', array_diff($legacyPermissions, $permissions))->delete();
+
+        foreach ($permissions as $permission) {
+            Permission::firstOrCreate([
+                'name' => $permission,
+                'guard_name' => 'web',
+            ]);
+        }
+
+        $adminRole = Role::firstOrCreate(['name' => 'Admin', 'guard_name' => 'web']);
+        $managerRole = Role::firstOrCreate(['name' => 'Manager', 'guard_name' => 'web']);
+        $staffRole = Role::firstOrCreate(['name' => 'Staff', 'guard_name' => 'web']);
+
+        $adminRole->syncPermissions($permissions);
+
+        $managerRole->syncPermissions(collect($permissions)
+            ->reject(fn (string $permission): bool => in_array($permission, static::managerDeniedPermissions(), true))
+            ->values()
+            ->all());
+
+        $staffRole->syncPermissions(static::staffPermissionNames());
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }

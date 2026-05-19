@@ -21,6 +21,7 @@ use App\Http\Controllers\Web\PaymentController;
 use App\Http\Controllers\Web\PendingDueController;
 use App\Http\Controllers\Web\ReceiptController;
 use App\Http\Controllers\Web\ReportController;
+use App\Http\Controllers\Web\SeederController;
 use App\Http\Controllers\Web\SettingController;
 use App\Http\Controllers\Web\SmsLogController;
 use App\Http\Controllers\Web\StaffCashHandoverController;
@@ -29,6 +30,9 @@ use App\Http\Controllers\Web\WhatsappLogController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/login');
+
+Route::get('/seeders', [SeederController::class, 'index'])->name('seeders.index');
+Route::post('/seeders/run', [SeederController::class, 'run'])->name('seeders.run');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [WebAuthController::class, 'showLogin'])->name('login');
@@ -65,7 +69,6 @@ Route::middleware(['auth', 'verified', 'role:Admin|Manager|Staff'])->group(funct
     Route::get('/settings/backup', [SettingController::class, 'backup'])
         ->middleware('permission:settings.backup')
         ->name('settings.backup');
-
     Route::get('/backups', [BackupController::class, 'index'])
         ->middleware('permission:backup.view')
         ->name('backups.index');
