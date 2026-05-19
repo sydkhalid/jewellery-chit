@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ReceiptCancelRequest;
 use App\Http\Resources\ChitReceiptResource;
+use App\Jobs\SendReceiptWhatsappJob;
 use App\Models\Branch;
 use App\Models\ChitEnrollment;
 use App\Models\ChitReceipt;
@@ -132,6 +133,23 @@ class ReceiptController extends Controller
 
     public function whatsapp(Request $request, ChitReceipt $receipt): JsonResponse|RedirectResponse
     {
+        if ($this->shouldQueueReceiptMessages()) {
+            SendReceiptWhatsappJob::dispatch($receipt->id, $request->user()?->id)->onQueue('messages')->afterCommit();
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'WhatsApp receipt share queued successfully',
+                    'data' => [
+                        'queued' => true,
+                        'receipt_id' => $receipt->id,
+                    ],
+                ], 202);
+            }
+
+            return back()->with('success', 'WhatsApp receipt share queued successfully');
+        }
+
         try {
             $share = $this->receiptService->sendWhatsappReceipt($receipt);
         } catch (ValidationException $exception) {
@@ -218,6 +236,11 @@ class ReceiptController extends Controller
             'payment.branch',
             'payment.allocations.installment',
         ];
+    }
+
+    private function shouldQueueReceiptMessages(): bool
+    {
+        return config('queue.default') !== 'sync';
     }
 
     private function successResponse(Request $request, string $message, ChitReceipt $receipt, ?string $redirect = null): JsonResponse|RedirectResponse

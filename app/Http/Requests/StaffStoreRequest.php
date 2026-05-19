@@ -6,6 +6,7 @@ use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 class StaffStoreRequest extends FormRequest
 {
@@ -23,7 +24,7 @@ class StaffStoreRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
             'mobile' => ['nullable', 'string', 'max:20', Rule::unique('users', 'mobile')],
-            'password' => ['required', 'string', 'min:8'],
+            'password' => ['required', Password::defaults()],
             'branch_id' => ['required', 'exists:branches,id'],
             'role' => ['required', 'in:Admin,Manager,Staff'],
             'status' => ['required', 'in:active,inactive'],

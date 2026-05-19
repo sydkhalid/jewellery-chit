@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\SecureUpload;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -24,7 +25,7 @@ class CustomerStoreRequest extends FormRequest
             'mobile' => ['required', 'string', 'max:20', Rule::unique('customers', 'mobile')],
             'alternate_mobile' => ['nullable', 'string', 'max:20'],
             'email' => ['nullable', 'email', 'max:255'],
-            'photo' => ['nullable', 'image', 'max:2048'],
+            'photo' => ['nullable', ...SecureUpload::image()],
             'aadhaar_no' => ['nullable', 'string', 'max:20'],
             'pan_no' => ['nullable', 'string', 'max:20'],
             'address' => ['required', 'string'],

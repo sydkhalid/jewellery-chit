@@ -8,6 +8,7 @@ use App\Models\GoldRate;
 use App\Repositories\GoldRateRepository;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -48,6 +49,7 @@ class GoldRateService
 
             $rate->load(['creator', 'approver']);
             $this->logRateAction($rate, 'create', 'created', null, $rate->toArray());
+            $this->forgetRateCache();
 
             return $rate;
         });
@@ -92,6 +94,7 @@ class GoldRateService
 
             $goldRate->load(['creator', 'approver']);
             $this->logRateAction($goldRate, 'update', 'updated', $oldValues, $goldRate->toArray());
+            $this->forgetRateCache();
 
             return $goldRate;
         });
@@ -121,6 +124,7 @@ class GoldRateService
 
             $goldRate->load(['creator', 'approver']);
             $this->logRateAction($goldRate, 'approval', 'approved', $oldValues, $goldRate->toArray());
+            $this->forgetRateCache();
 
             return $goldRate;
         });
@@ -152,6 +156,7 @@ class GoldRateService
                 'rate' => $goldRate->toArray(),
                 'reason' => $data['reason'] ?? null,
             ]);
+            $this->forgetRateCache();
 
             return $goldRate;
         });
@@ -175,6 +180,7 @@ class GoldRateService
 
             $goldRate->load(['creator', 'approver']);
             $this->logRateAction($goldRate, 'lock', 'locked', $oldValues, $goldRate->toArray());
+            $this->forgetRateCache();
 
             return $goldRate;
         });
@@ -182,20 +188,28 @@ class GoldRateService
 
     public function getTodayRate(): ?GoldRate
     {
-        return GoldRate::query()
-            ->whereDate('rate_date', today())
-            ->where('status', 'approved')
-            ->latest('id')
-            ->first();
+        return Cache::remember(
+            'gold-rates:today:'.today()->toDateString(),
+            now()->addSeconds((int) config('jewellery.cache.gold_rate_ttl', 300)),
+            fn (): ?GoldRate => GoldRate::query()
+                ->whereDate('rate_date', today())
+                ->where('status', 'approved')
+                ->latest('id')
+                ->first()
+        );
     }
 
     public function getLatestApprovedRate(): ?GoldRate
     {
-        return GoldRate::query()
-            ->where('status', 'approved')
-            ->orderByDesc('rate_date')
-            ->orderByDesc('id')
-            ->first();
+        return Cache::remember(
+            'gold-rates:latest-approved',
+            now()->addSeconds((int) config('jewellery.cache.gold_rate_ttl', 300)),
+            fn (): ?GoldRate => GoldRate::query()
+                ->where('status', 'approved')
+                ->orderByDesc('rate_date')
+                ->orderByDesc('id')
+                ->first()
+        );
     }
 
     /**
@@ -226,6 +240,12 @@ class GoldRateService
                 'gold_rate' => 'Only Admin or Manager can approve, reject, or lock rates.',
             ]);
         }
+    }
+
+    private function forgetRateCache(): void
+    {
+        Cache::forget('gold-rates:today:'.today()->toDateString());
+        Cache::forget('gold-rates:latest-approved');
     }
 
     /**

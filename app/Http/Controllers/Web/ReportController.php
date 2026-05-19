@@ -16,6 +16,7 @@ use App\Exports\ReceiptReportExport;
 use App\Exports\SchemeReportExport;
 use App\Exports\StaffReportExport;
 use App\Http\Controllers\Controller;
+use App\Jobs\ExportReportJob;
 use App\Models\Branch;
 use App\Models\ChitScheme;
 use App\Models\Customer;
@@ -109,9 +110,13 @@ class ReportController extends Controller
         return $this->reportPage($request, 'cashflow');
     }
 
-    public function exportExcel(Request $request, string $type): BinaryFileResponse
+    public function exportExcel(Request $request, string $type): BinaryFileResponse|JsonResponse
     {
         abort_unless($request->user()?->can('reports.export_excel'), 403);
+
+        if ($request->boolean('queue')) {
+            return $this->queueExport($request, $type, 'xlsx');
+        }
 
         $payload = $this->reports->exportPayload($type, $this->filters($request));
         $class = $this->exportClass($type);
@@ -120,9 +125,13 @@ class ReportController extends Controller
         return Excel::download(new $class($payload), $this->fileName($type, 'xlsx'));
     }
 
-    public function exportPdf(Request $request, string $type): \Illuminate\Http\Response
+    public function exportPdf(Request $request, string $type): \Illuminate\Http\Response|JsonResponse
     {
         abort_unless($request->user()?->can('reports.export_pdf'), 403);
+
+        if ($request->boolean('queue')) {
+            return $this->queueExport($request, $type, 'pdf');
+        }
 
         $payload = $this->reports->exportPayload($type, $this->filters($request));
         $this->reports->logReportAction($type, 'export_pdf');
@@ -230,5 +239,24 @@ class ReportController extends Controller
     private function fileName(string $type, string $extension): string
     {
         return str($type)->replace('-', '_')->toString().'_report_'.now()->format('Ymd_His').".{$extension}";
+    }
+
+    private function queueExport(Request $request, string $type, string $format): JsonResponse
+    {
+        $fileName = $this->fileName($type, $format);
+        $path = 'report-exports/'.$fileName;
+
+        ExportReportJob::dispatch($type, $format, $this->filters($request), $path, $request->user()?->id)
+            ->onQueue('exports')
+            ->afterCommit();
+
+        return response()->json([
+            'success' => true,
+            'message' => strtoupper($format).' report export queued successfully',
+            'data' => [
+                'queued' => true,
+                'path' => $path,
+            ],
+        ], 202);
     }
 }

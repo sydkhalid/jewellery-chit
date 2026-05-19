@@ -32,7 +32,7 @@ Route::redirect('/', '/login');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [WebAuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [WebAuthController::class, 'login']);
+    Route::post('/login', [WebAuthController::class, 'login'])->middleware('throttle:login');
 });
 
 Route::post('/logout', [WebAuthController::class, 'logout'])
@@ -100,7 +100,7 @@ Route::middleware(['auth', 'verified', 'role:Admin|Manager|Staff'])->group(funct
         ->name('activity-logs.show');
 
     Route::get('/messages', [NotificationController::class, 'index'])
-        ->middleware('permission:messages.view')
+        ->middleware('permission:messages.view|messages.send')
         ->name('messages.index');
     Route::get('/messages/whatsapp-logs', [WhatsappLogController::class, 'index'])
         ->middleware('permission:messages.logs')

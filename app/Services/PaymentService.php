@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\GenerateReceiptPdfJob;
 use App\Models\ActivityLog;
 use App\Models\AuditLog;
 use App\Models\Cashbook;
@@ -197,7 +198,13 @@ class PaymentService
 
     public function createReceipt(ChitPayment $payment): ChitReceipt
     {
-        return $this->receiptService->generateReceipt($payment);
+        $receipt = $this->receiptService->generateReceipt($payment);
+
+        if (config('queue.default') !== 'sync') {
+            GenerateReceiptPdfJob::dispatch($receipt->id, Auth::id())->onQueue('pdf')->afterCommit();
+        }
+
+        return $receipt;
     }
 
     /**

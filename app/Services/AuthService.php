@@ -77,11 +77,14 @@ class AuthService
             ];
         }
 
+        $expiresAt = $this->tokenExpiresAt();
+
         return [
             'success' => true,
             'message' => 'Login successful',
             'status' => 200,
-            'token' => $user->createToken('mobile-api')->plainTextToken,
+            'token' => $user->createToken('mobile-api', ['*'], $expiresAt)->plainTextToken,
+            'expires_at' => $expiresAt?->toISOString(),
             'user' => $user,
         ];
     }
@@ -97,5 +100,14 @@ class AuthService
     public function revokeCurrentToken(mixed $accessToken): void
     {
         $accessToken?->delete();
+    }
+
+    private function tokenExpiresAt(): ?\Illuminate\Support\Carbon
+    {
+        $minutes = config('sanctum.expiration');
+
+        return is_numeric($minutes) && (int) $minutes > 0
+            ? now()->addMinutes((int) $minutes)
+            : null;
     }
 }

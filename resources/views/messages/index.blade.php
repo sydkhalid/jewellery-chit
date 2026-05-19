@@ -19,30 +19,34 @@
     </div>
 
     <div class="row g-4 mb-4">
-        <div class="col-md-3">
-            <a href="{{ route('messages.notifications') }}" class="admin-card h-100 text-decoration-none text-reset d-block">
-                <div class="text-muted small">Notifications</div>
-                <div class="metric-value">{{ number_format($summary['notifications']) }}</div>
-            </a>
-        </div>
-        <div class="col-md-3">
-            <a href="{{ route('messages.whatsapp-logs') }}" class="admin-card h-100 text-decoration-none text-reset d-block">
-                <div class="text-muted small">WhatsApp Logs</div>
-                <div class="metric-value">{{ number_format($summary['whatsapp']) }}</div>
-            </a>
-        </div>
-        <div class="col-md-3">
-            <a href="{{ route('messages.sms-logs') }}" class="admin-card h-100 text-decoration-none text-reset d-block">
-                <div class="text-muted small">SMS Logs</div>
-                <div class="metric-value">{{ number_format($summary['sms']) }}</div>
-            </a>
-        </div>
-        <div class="col-md-3">
-            <div class="admin-card h-100">
-                <div class="text-muted small">Failed Messages</div>
-                <div class="metric-value">{{ number_format($summary['failed']) }}</div>
+        @can('messages.view')
+            <div class="col-md-3">
+                <a href="{{ route('messages.notifications') }}" class="admin-card h-100 text-decoration-none text-reset d-block">
+                    <div class="text-muted small">Notifications</div>
+                    <div class="metric-value">{{ number_format($summary['notifications']) }}</div>
+                </a>
             </div>
-        </div>
+        @endcan
+        @can('messages.logs')
+            <div class="col-md-3">
+                <a href="{{ route('messages.whatsapp-logs') }}" class="admin-card h-100 text-decoration-none text-reset d-block">
+                    <div class="text-muted small">WhatsApp Logs</div>
+                    <div class="metric-value">{{ number_format($summary['whatsapp']) }}</div>
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{{ route('messages.sms-logs') }}" class="admin-card h-100 text-decoration-none text-reset d-block">
+                    <div class="text-muted small">SMS Logs</div>
+                    <div class="metric-value">{{ number_format($summary['sms']) }}</div>
+                </a>
+            </div>
+            <div class="col-md-3">
+                <div class="admin-card h-100">
+                    <div class="text-muted small">Failed Messages</div>
+                    <div class="metric-value">{{ number_format($summary['failed']) }}</div>
+                </div>
+            </div>
+        @endcan
     </div>
 
     <div class="admin-card">

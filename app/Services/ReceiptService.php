@@ -168,6 +168,7 @@ class ReceiptService
         ]);
 
         $status = ($share['provider_response']['provider'] ?? null) === 'placeholder'
+            || (bool) ($share['provider_response']['simulated'] ?? false)
             ? 'placeholder'
             : $share['status'];
 

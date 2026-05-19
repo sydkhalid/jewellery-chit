@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class DashboardService
 {
@@ -18,6 +19,27 @@ class DashboardService
      * @return array<string, mixed>
      */
     public function getDashboardData(): array
+    {
+        $user = Auth::user();
+        $roles = $user?->getRoleNames()->implode(',') ?: 'guest';
+        $cacheKey = 'dashboard:'.md5(implode('|', [
+            (string) ($user?->id ?? 'guest'),
+            (string) ($user?->branch_id ?? 'none'),
+            $roles,
+            today()->toDateString(),
+        ]));
+
+        return Cache::remember(
+            $cacheKey,
+            now()->addSeconds((int) config('jewellery.cache.dashboard_ttl', 300)),
+            fn (): array => $this->buildDashboardData()
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildDashboardData(): array
     {
         $today = today();
         $monthStart = $today->copy()->startOfMonth();

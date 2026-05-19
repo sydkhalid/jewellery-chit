@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\SecureUpload;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -25,7 +26,7 @@ class ChitEnrollmentStoreRequest extends FormRequest
             'assigned_staff_id' => ['nullable', 'exists:users,id'],
             'start_date' => ['required', 'date'],
             'monthly_amount' => ['nullable', 'numeric', 'min:0'],
-            'agreement_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+            'agreement_file' => ['nullable', ...SecureUpload::agreement()],
             'remarks' => ['nullable', 'string'],
         ];
     }

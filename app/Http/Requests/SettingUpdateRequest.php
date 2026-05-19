@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\SecureUpload;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -21,7 +22,7 @@ class SettingUpdateRequest extends FormRequest
     {
         return [
             'shop_name' => ['required', 'string', 'max:255'],
-            'shop_logo' => ['nullable', 'image', 'max:2048'],
+            'shop_logo' => ['nullable', ...SecureUpload::image()],
             'shop_address' => ['nullable', 'string'],
             'shop_mobile' => ['nullable', 'string', 'max:20'],
             'shop_email' => ['nullable', 'email', 'max:255'],

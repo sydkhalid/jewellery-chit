@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PendingDueFollowUpRequest;
 use App\Http\Resources\PendingDueResource;
+use App\Jobs\SendBulkDueReminderJob;
+use App\Jobs\SendDueReminderJob;
 use App\Models\Branch;
 use App\Models\ChitInstallment;
 use App\Models\ChitScheme;
@@ -97,7 +99,26 @@ class PendingDueController extends Controller
 
     public function sendReminder(Request $request, ChitInstallment $installment): JsonResponse
     {
+        $request->validate([
+            'channel' => ['nullable', 'in:whatsapp,sms'],
+        ]);
+
         try {
+            $channel = (string) $request->input('channel', 'whatsapp');
+            if ($this->shouldQueueReminders()) {
+                SendDueReminderJob::dispatch($installment->id, $channel, $request->user()?->id)->onQueue('reminders')->afterCommit();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Reminder queued successfully',
+                    'data' => [
+                        'queued' => true,
+                        'installment_id' => $installment->id,
+                        'channel' => $channel,
+                    ],
+                ], 202);
+            }
+
             $result = $this->pendingDueService->sendDueReminder($installment, (string) $request->input('channel', 'whatsapp'));
         } catch (ValidationException $exception) {
             return $this->validationErrorResponse($exception);
@@ -119,6 +140,23 @@ class PendingDueController extends Controller
         ]);
 
         try {
+            if ($this->shouldQueueReminders()) {
+                $installmentIds = array_map('intval', $request->input('installment_ids', []));
+                SendBulkDueReminderJob::dispatch($installmentIds, (string) $request->input('channel'), $request->user()?->id)
+                    ->onQueue('reminders')
+                    ->afterCommit();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => count($installmentIds).' reminders queued successfully',
+                    'data' => [
+                        'queued' => true,
+                        'count' => count($installmentIds),
+                        'channel' => (string) $request->input('channel'),
+                    ],
+                ], 202);
+            }
+
             $result = $this->pendingDueService->sendBulkDueReminder($request->input('installment_ids', []), (string) $request->input('channel'));
         } catch (ValidationException $exception) {
             return $this->validationErrorResponse($exception);
@@ -199,6 +237,11 @@ class PendingDueController extends Controller
         };
 
         return sprintf('<span class="badge rounded-pill text-bg-%s">%s</span>', $class, ucfirst(str_replace('_', ' ', $status)));
+    }
+
+    private function shouldQueueReminders(): bool
+    {
+        return config('queue.default') !== 'sync';
     }
 
     private function validationErrorResponse(ValidationException $exception): JsonResponse

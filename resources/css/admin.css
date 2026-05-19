@@ -120,6 +120,7 @@
 .admin-nav .collapse,
 .admin-nav .collapsing {
     min-width: 0;
+    visibility: visible;
 }
 
 .admin-nav .collapse.show {

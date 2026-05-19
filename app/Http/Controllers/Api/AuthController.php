@@ -20,6 +20,8 @@ class AuthController extends BaseApiController
      */
     public function login(LoginRequest $request): JsonResponse
     {
+        $request->ensureIsNotRateLimited();
+
         $credentials = $request->validated();
         $result = $this->authService->issueToken(
             $credentials['email'],
@@ -27,11 +29,16 @@ class AuthController extends BaseApiController
         );
 
         if (! $result['success']) {
+            $request->hitRateLimiter();
+
             return $this->sendError($result['message'], [], $result['status']);
         }
 
+        $request->clearRateLimiter();
+
         return $this->sendSuccess([
                 'token' => $result['token'],
+                'expires_at' => $result['expires_at'] ?? null,
                 'user' => new UserResource($result['user']),
         ], 'Login successful');
     }

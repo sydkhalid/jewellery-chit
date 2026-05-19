@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Jobs\SendMessageJob;
 use App\Http\Resources\NotificationResource;
 use App\Http\Resources\SmsLogResource;
 use App\Http\Resources\WhatsappLogResource;
@@ -21,6 +22,18 @@ class MessageController extends BaseApiController
     {
         try {
             $data = $this->validatedMessageData($request);
+            if ($this->shouldQueueMessages()) {
+                SendMessageJob::dispatch('whatsapp', $data, $request->user()?->id)->onQueue('messages')->afterCommit();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'WhatsApp message queued successfully',
+                    'data' => [
+                        'queued' => true,
+                    ],
+                ], 202);
+            }
+
             $result = $this->messageService->sendWhatsapp($data);
         } catch (ValidationException $exception) {
             return $this->validationErrorResponse($exception);
@@ -40,6 +53,18 @@ class MessageController extends BaseApiController
     {
         try {
             $data = $this->validatedMessageData($request);
+            if ($this->shouldQueueMessages()) {
+                SendMessageJob::dispatch('sms', $data, $request->user()?->id)->onQueue('messages')->afterCommit();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'SMS message queued successfully',
+                    'data' => [
+                        'queued' => true,
+                    ],
+                ], 202);
+            }
+
             $result = $this->messageService->sendSms($data);
         } catch (ValidationException $exception) {
             return $this->validationErrorResponse($exception);
@@ -135,6 +160,11 @@ class MessageController extends BaseApiController
             'per_page' => $paginator->perPage(),
             'total' => $paginator->total(),
         ];
+    }
+
+    private function shouldQueueMessages(): bool
+    {
+        return config('queue.default') !== 'sync';
     }
 
     private function validationErrorResponse(ValidationException $exception): JsonResponse

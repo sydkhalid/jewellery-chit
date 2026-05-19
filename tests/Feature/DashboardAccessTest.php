@@ -118,10 +118,28 @@ class DashboardAccessTest extends TestCase
             ->assertSee('Ledger')
             ->assertSee('Pending Dues')
             ->assertSee('WhatsApp/SMS')
+            ->assertSee('Message Dashboard')
+            ->assertDontSee('WhatsApp Logs')
+            ->assertDontSee('SMS Logs')
             ->assertDontSee('Gold Rates')
             ->assertDontSee('Staff & Branch')
             ->assertDontSee('Reports')
             ->assertDontSee('Admin Settings');
+    }
+
+    public function test_staff_with_send_permission_can_open_message_dashboard(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $staff = User::factory()->create(['name' => 'Staff User']);
+        $staff->assignRole('Staff');
+
+        $this->actingAs($staff)
+            ->get(route('messages.index'))
+            ->assertOk()
+            ->assertSee('Send Message')
+            ->assertDontSee('WhatsApp Logs')
+            ->assertDontSee('SMS Logs');
     }
 
     public function test_dashboard_contains_chart_mount_points_and_responsive_shell(): void

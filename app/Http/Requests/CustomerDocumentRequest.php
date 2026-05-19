@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\SecureUpload;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -22,7 +23,7 @@ class CustomerDocumentRequest extends FormRequest
         return [
             'document_type' => ['required', 'string', 'max:255'],
             'document_number' => ['nullable', 'string', 'max:255'],
-            'file_path' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:5120'],
+            'file_path' => ['required', ...SecureUpload::document()],
             'status' => ['nullable', Rule::in(['active', 'inactive'])],
         ];
     }

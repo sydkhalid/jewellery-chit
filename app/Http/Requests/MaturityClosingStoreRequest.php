@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\SecureUpload;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -24,7 +25,7 @@ class MaturityClosingStoreRequest extends FormRequest
             'deductions' => ['nullable', 'numeric', 'min:0'],
             'refund_amount' => ['nullable', 'numeric', 'min:0'],
             'jewellery_adjustment_amount' => ['nullable', 'numeric', 'min:0'],
-            'customer_signature' => ['nullable', 'image'],
+            'customer_signature' => ['nullable', ...SecureUpload::image()],
             'remarks' => ['nullable', 'string'],
         ];
     }

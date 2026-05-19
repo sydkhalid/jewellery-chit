@@ -1,6 +1,5 @@
 import './bootstrap';
 
-import 'bootstrap';
 import Alpine from 'alpinejs';
 import ApexCharts from 'apexcharts';
 import DataTable from 'datatables.net-bs5';

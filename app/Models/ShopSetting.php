@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 class ShopSetting extends Model
 {
@@ -23,9 +24,19 @@ class ShopSetting extends Model
         return [];
     }
 
+    protected static function booted(): void
+    {
+        static::saved(fn (ShopSetting $setting): bool => static::forgetCache($setting));
+        static::deleted(fn (ShopSetting $setting): bool => static::forgetCache($setting));
+    }
+
     public static function getByKey(string $key, mixed $default = null): mixed
     {
-        $setting = static::query()->where('key', $key)->first();
+        $setting = Cache::remember(
+            static::cacheKey($key),
+            now()->addSeconds((int) config('jewellery.cache.settings_ttl', 3600)),
+            fn (): ?self => static::query()->where('key', $key)->first()
+        );
 
         if (! $setting) {
             return $default;
@@ -47,7 +58,7 @@ class ShopSetting extends Model
             default => $value,
         };
 
-        return static::query()->updateOrCreate(
+        $setting = static::query()->updateOrCreate(
             ['key' => $key],
             [
                 'value' => $storedValue,
@@ -55,5 +66,26 @@ class ShopSetting extends Model
                 'group_name' => $groupName,
             ]
         );
+
+        static::forgetCache($setting);
+
+        return $setting;
+    }
+
+    private static function cacheKey(string $key): string
+    {
+        return 'settings:key:'.$key;
+    }
+
+    private static function forgetCache(self $setting): bool
+    {
+        Cache::forget(static::cacheKey($setting->key));
+        Cache::forget('settings:all');
+
+        if ($setting->group_name) {
+            Cache::forget('settings:group:'.$setting->group_name);
+        }
+
+        return true;
     }
 }

@@ -267,8 +267,14 @@ class ReportService
                     $query->whereDate('due_date', '<', today())->where('balance_amount', '>', 0);
                 });
             }),
-            'staff' => User::query()->with(['branch', 'roles'])->withCount('staffCashHandovers')->role(['Admin', 'Manager', 'Staff']),
-            'branches' => Branch::query()->withCount(['users', 'enrollments']),
+            'staff' => User::query()
+                ->with(['branch', 'roles'])
+                ->withCount('staffCashHandovers')
+                ->withSum(['staffCollections as total_collection_sum' => fn (Builder $query): Builder => $query->where('status', 'success')], 'total_amount')
+                ->role(['Admin', 'Manager', 'Staff']),
+            'branches' => Branch::query()
+                ->withCount(['users', 'enrollments'])
+                ->withSum(['payments as total_collection_sum' => fn (Builder $query): Builder => $query->where('status', 'success')], 'total_amount'),
             'schemes' => ChitScheme::query()->withCount('enrollments'),
             'receipts' => ChitReceipt::query()->with(['customer', 'enrollment', 'payment.paymentMode', 'payment.staff', 'payment.branch']),
             'cashflow' => Cashbook::query()->with(['branch', 'paymentMode', 'creator']),
@@ -421,7 +427,7 @@ class ReportService
                 'role' => $model->getRoleNames()->first() ?? '-',
                 'branch' => $model->branch?->name ?? '-',
                 'status' => $model->status,
-                'total_collection' => (float) ChitPayment::where('staff_id', $model->id)->where('status', 'success')->sum('total_amount'),
+                'total_collection' => (float) ($model->total_collection_sum ?? 0),
                 'created_at' => optional($model->created_at)->format('d M Y'),
             ],
             'branches' => [
@@ -431,7 +437,7 @@ class ReportService
                 'status' => $model->status,
                 'users_count' => (int) $model->users_count,
                 'enrollments_count' => (int) $model->enrollments_count,
-                'total_collection' => (float) ChitPayment::where('branch_id', $model->id)->where('status', 'success')->sum('total_amount'),
+                'total_collection' => (float) ($model->total_collection_sum ?? 0),
             ],
             'schemes' => [
                 'scheme_code' => $model->scheme_code,

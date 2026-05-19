@@ -23,9 +23,9 @@ use App\Http\Controllers\Api\StaffCashHandoverController;
 use App\Http\Controllers\Api\StaffController;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:api-login');
 
-Route::prefix('webhooks')->name('api.webhooks.')->group(function () {
+Route::prefix('webhooks')->middleware('throttle:webhooks')->name('api.webhooks.')->group(function () {
     Route::post('/whatsapp/twilio', [IntegrationWebhookController::class, 'twilioWhatsapp'])->name('whatsapp.twilio');
     Route::get('/whatsapp/meta', [IntegrationWebhookController::class, 'metaWhatsappVerify'])->name('whatsapp.meta.verify');
     Route::post('/whatsapp/meta', [IntegrationWebhookController::class, 'metaWhatsapp'])->name('whatsapp.meta');
@@ -37,7 +37,7 @@ Route::prefix('webhooks')->name('api.webhooks.')->group(function () {
     Route::post('/payments/upi-qr', [IntegrationWebhookController::class, 'upiQr'])->name('payments.upi-qr');
 });
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
     Route::get('/profile', [AuthController::class, 'profile']);

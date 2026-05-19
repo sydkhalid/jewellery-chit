@@ -93,14 +93,21 @@ class PendingDueService
      */
     public function calculateDueSummary(array $filters): array
     {
-        $dues = $this->getPendingDuesQuery($filters)->get();
+        $summary = (clone $this->getPendingDuesQuery($filters))
+            ->toBase()
+            ->selectRaw('COUNT(*) as aggregate_count')
+            ->selectRaw('COALESCE(SUM(due_amount), 0) as total_due')
+            ->selectRaw('COALESCE(SUM(paid_amount), 0) as total_paid')
+            ->selectRaw('COALESCE(SUM(balance_amount), 0) as total_balance')
+            ->selectRaw('COALESCE(SUM(late_fee), 0) as total_late_fee')
+            ->first();
 
         return [
-            'count' => $dues->count(),
-            'total_due' => round((float) $dues->sum('due_amount'), 2),
-            'total_paid' => round((float) $dues->sum('paid_amount'), 2),
-            'total_balance' => round((float) $dues->sum('balance_amount'), 2),
-            'total_late_fee' => round((float) $dues->sum('late_fee'), 2),
+            'count' => (int) ($summary->aggregate_count ?? 0),
+            'total_due' => round((float) ($summary->total_due ?? 0), 2),
+            'total_paid' => round((float) ($summary->total_paid ?? 0), 2),
+            'total_balance' => round((float) ($summary->total_balance ?? 0), 2),
+            'total_late_fee' => round((float) ($summary->total_late_fee ?? 0), 2),
             'today_count' => $this->getPendingDuesQuery(array_replace($filters, ['due_type' => 'today']))->count(),
             'overdue_count' => $this->getPendingDuesQuery(array_replace($filters, ['due_type' => 'overdue']))->count(),
         ];

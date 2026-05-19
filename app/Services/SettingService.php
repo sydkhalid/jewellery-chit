@@ -8,6 +8,7 @@ use App\Models\ShopSetting;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -18,7 +19,11 @@ class SettingService
      */
     public function getAllSettings(): Collection
     {
-        return ShopSetting::query()->orderBy('group_name')->orderBy('key')->get();
+        return Cache::remember(
+            'settings:all',
+            now()->addSeconds((int) config('jewellery.cache.settings_ttl', 3600)),
+            fn (): Collection => ShopSetting::query()->orderBy('group_name')->orderBy('key')->get()
+        );
     }
 
     /**
@@ -26,7 +31,11 @@ class SettingService
      */
     public function getSettingsByGroup(string $group): Collection
     {
-        return ShopSetting::query()->where('group_name', $group)->orderBy('key')->get();
+        return Cache::remember(
+            'settings:group:'.$group,
+            now()->addSeconds((int) config('jewellery.cache.settings_ttl', 3600)),
+            fn (): Collection => ShopSetting::query()->where('group_name', $group)->orderBy('key')->get()
+        );
     }
 
     public function get(string $key, mixed $default = null): mixed
